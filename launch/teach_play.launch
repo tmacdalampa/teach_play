@@ -1,0 +1,7 @@
+<launch>
+  <!--Load Robot Arm Parameter-->
+  <rosparam command="load" file="$(find teach_play)/config/scorpio_arm_config.yaml"/>
+  <!--Main control node-->
+  <node name="cobot_controller" pkg="teach_play" type="teach_and_play" output="screen"/> 
+  <!--type = executable file name-->
+</launch>

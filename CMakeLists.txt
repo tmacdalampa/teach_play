@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(teach_play)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -10,10 +10,10 @@ project(teach_play)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  rospy
   std_msgs
 )
-
+#set(CMAKE_CXX_FLAGS "-no-pie")
+#set(CMAKE_C_FLAGS "-no-pie")
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -104,9 +104,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES teach_play
-#  CATKIN_DEPENDS roscpp rospy rospy std_msgs
+  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -117,8 +117,10 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
+  ${Eigen_INCLUDE_DIRS}
+
 )
 
 ## Declare a C++ library
@@ -170,7 +172,20 @@ include_directories(
 # install(TARGETS ${PROJECT_NAME}_node
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
+#add_library(ecat_master
+  #src/hardware.cpp
+  #src/transmission.cpp
+  #src/EcatMaster.cpp
+  #src/test_csp.cpp
+#)
 
+add_library(elmo_controller
+  src/hardware_transmission_common.cpp
+)
+
+target_link_libraries(elmo_controller
+  ${catkin_LIBRARIES}
+)
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
 # install(TARGETS ${PROJECT_NAME}
@@ -202,6 +217,17 @@ include_directories(
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
+add_executable(teach_and_play
+  src/main.cpp
+  src/robot.cpp
+)
+
+target_link_libraries(teach_and_play
+  ${catkin_LIBRARIES}
+  elmo_controller
+  MMC_APP_LinuxRpc64
+  MMCPP_LinuxRpc64
+)
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
