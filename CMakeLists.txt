@@ -12,8 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
 )
-#set(CMAKE_CXX_FLAGS "-no-pie")
-#set(CMAKE_C_FLAGS "-no-pie")
+set(CMAKE_CXX_FLAGS "-no-pie")
+set(CMAKE_C_FLAGS "-no-pie")
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -179,13 +179,14 @@ include_directories(
   #src/test_csp.cpp
 #)
 
-add_library(elmo_controller
-  src/hardware_transmission_common.cpp
-)
 
-target_link_libraries(elmo_controller
-  ${catkin_LIBRARIES}
-)
+#add_library(elmo_controller
+#  src/hardware_transmission_common.cpp
+#)
+
+#target_link_libraries(elmo_controller
+#  ${catkin_LIBRARIES}
+#)
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
 # install(TARGETS ${PROJECT_NAME}
@@ -220,13 +221,14 @@ target_link_libraries(elmo_controller
 add_executable(teach_and_play
   src/main.cpp
   src/robot.cpp
+  src/hardware_transmission_common.cpp
 )
 
 target_link_libraries(teach_and_play
-  ${catkin_LIBRARIES}
-  elmo_controller
   MMC_APP_LinuxRpc64
   MMCPP_LinuxRpc64
+  ${catkin_LIBRARIES}
+  #elmo_controller
 )
 
 ## Add folders to be run by python nosetests

@@ -33,22 +33,22 @@ void Exception(CMMCException exp)
 
 HwTmIntf::HwTmIntf()
 {    
-    jnt_num = 6;
-    start_jnt = 0;
- 	
-    Init_Connection();
+    InitConnection();
     EnableAll();
     ResetAll();
+    for(int i = 0; i < JNT_NUM;i++)
+    {
+        enc_cnts[i] = 0;
+    }
 
 }
 
 HwTmIntf::~HwTmIntf()
 {
-
     DisableAll();
 }
 
-void HwTmIntf::Init_Connection()
+void HwTmIntf::InitConnection()
 {
     
     ELMO_INT32 iEventMask = 0x7FFFFFFF;
@@ -83,7 +83,7 @@ void HwTmIntf::EnableAll()
 {
     try
     { 
-        for(int id = start_jnt; id < jnt_num; id++)
+        for(int id = 0; id < JNT_NUM; id++)
         {
             //ROS_INFO("axis %d status is %d (STAND_STILL) and %d (DISCRETE_MOTION)", id, (cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK), (cAxis[id].ReadStatus()& NC_AXIS_DISCRETE_MOTION_MASK));
 	    
@@ -113,7 +113,7 @@ void HwTmIntf::DisableAll()
 	
     try
     {
-        for(int id = start_jnt; id < jnt_num; id++)
+        for(int id = 0; id < JNT_NUM; id++)
         {
             if (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
             {
@@ -134,7 +134,7 @@ void HwTmIntf::DisableAll()
     }
 	catch(CMMCException exp)
   	{
-        for(int id = start_jnt; id < jnt_num; id++)
+        for(int id = 0; id < JNT_NUM; id++)
       	{
             if (cAxis[id].ReadStatus() & NC_AXIS_ERROR_STOP_MASK)
             {
@@ -151,7 +151,7 @@ void HwTmIntf::ResetAll()
 {
 	try
     {
-        for(int id = start_jnt; id < jnt_num; id++)
+        for(int id = 0; id < JNT_NUM; id++)
         {
             if (cAxis[id].ReadStatus() & NC_AXIS_ERROR_STOP_MASK)
             {
@@ -191,7 +191,7 @@ void HwTmIntf::ChangeOpMode(int op_mode)
                 eMode = OPM402_CYCLIC_SYNC_TORQUE_MODE;
         }
 
-        for(int id = start_jnt; id < jnt_num; id++)
+        for(int id = 0; id < JNT_NUM; id++)
         {
             
             if (cAxis[id].GetOpMode() != eMode)
@@ -206,5 +206,13 @@ void HwTmIntf::ChangeOpMode(int op_mode)
     catch(CMMCException exp)
     {
         Exception(exp);
+    }
+}
+
+void HwTmIntf::ReadENC(array<int, JNT_NUM> enc_cnts)
+{
+    for (int i = 0; i < JNT_NUM; i++)
+    {
+        enc_cnts[i] = cAxis[i].GetActualPosition();
     }
 }

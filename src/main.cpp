@@ -1,6 +1,11 @@
 //main.cpp
+//include ros api and msgs
 #include <ros/ros.h>
 #include <iostream>
+#include <std_msgs/String.h>
+#include <sensor_msgs/JointState.h>
+
+//include c++ stuff
 #include <vector>
 #include <string>
 #include "teach_play/robot.h"
@@ -11,22 +16,21 @@ int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "cobot_controller");
   	ros::NodeHandle nh;
-	vector<int> gear_ratios;
-	vector<int> zero_points;
+  	ros::Rate rate(10);
 
-	int enc_resolution;
-
-    nh.getParam("gear_ratios", gear_ratios);
-    if( !nh.getParam("/gear_ratios", gear_ratios))
-    	ROS_ERROR("Failed to get parameter from server.");
-
-    //nh.getParam("zero_points", zero_points);
-    //nh.getParam("enc_resolution", enc_resolution);
+	#if 1
+  	Robot scorpio_arm(&nh);
+  	#else
+  	Robot scorpio_arm(nh);
+  	#endif
   	
-  	
-  	//int jnt_num = gear_ratios.size();
-  	//cout << jnt_num << endl;
-  	//Robot scorpio_arm(jnt_num, gear_ratios, zero_points, enc_resolution);
+  	while(ros::ok())
+  	{
+  		scorpio_arm.JointStatesPublisher();
+  		ros::spinOnce();
+  		rate.sleep();
+  	}
+	
 
 	return 0;
 }

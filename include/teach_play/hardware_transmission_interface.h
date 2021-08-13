@@ -15,7 +15,7 @@
 #include "MMCPP/MMCPPlib.hpp"
 #include "MMC_APP/MMC_definitions.h"
 
-
+#define JNT_NUM 6
 
 
 
@@ -24,38 +24,17 @@ class HwTmIntf
   public:
     HwTmIntf();
     ~HwTmIntf();
-    
-    int start_jnt;
-    int jnt_num;
 
-    const std::vector<int> AxisGearRatios = {161, 161, 121, 161, 161, 101};
-    const std::vector<int> ZeroPoints = {21075821, 3787515, -30318, -366005, 11787161, 40952066};
-    const int ENC_FULL = 131072;
-    const int acc_max = 100000000;
-
-    void Init_Connection();
+    void InitConnection();
     void EnableAll();
     void DisableAll();
     void ResetAll();
     void ChangeOpMode(int op_mode);
+    void ReadENC(array<int, JNT_NUM> enc_cnts);
+    array<int, JNT_NUM> enc_cnts;
 
   private:
-    
-    //variable for class
-  	
-    
-    
-    int point_num_real; //real point number put inside dTable
-    
-    double pvt_table_time_interval; // = time_final_real/point_num_real
-    double vel_factor;
-    
-    std::vector<double> time_from_start_real;//time vector real
-    std::vector<std::vector<int>> pvt_table; //final PVT vector synthesis by myself
-
-
-
-    
+        
     //variable related with ELMO ethercat master
     MMC_CONNECT_HNDL gConnHndl ;
     CMMCConnection gConn ;
