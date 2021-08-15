@@ -26,6 +26,10 @@ int main(int argc, char** argv)
   	
   	while(ros::ok())
   	{
+  		if (scorpio_arm.torque_mode_flag == true)
+  		{
+  			//scorpio_arm.UpdateTorque();
+  		}
   		scorpio_arm.JointStatesPublisher();
   		ros::spinOnce();
   		rate.sleep();

@@ -30,8 +30,9 @@ class HwTmIntf
     void DisableAll();
     void ResetAll();
     void ChangeOpMode(int op_mode);
-    void ReadENC(array<int, JNT_NUM> enc_cnts);
-    array<int, JNT_NUM> enc_cnts;
+    vector<double> ReadENC();
+    void MoveTorque(vector<double> torque_cmd);
+
 
   private:
         

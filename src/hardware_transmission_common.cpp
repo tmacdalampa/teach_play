@@ -1,7 +1,7 @@
 #include "teach_play/hardware_transmission_interface.h"
 #include <fstream>
 //#include <ros/ros.h>
-#include "sensor_msgs/JointState.h"
+
 
 #define PI 3.1415926
 
@@ -34,13 +34,6 @@ void Exception(CMMCException exp)
 HwTmIntf::HwTmIntf()
 {    
     InitConnection();
-    EnableAll();
-    ResetAll();
-    for(int i = 0; i < JNT_NUM;i++)
-    {
-        enc_cnts[i] = 0;
-    }
-
 }
 
 HwTmIntf::~HwTmIntf()
@@ -179,6 +172,7 @@ void HwTmIntf::ResetAll()
 
 void HwTmIntf::ChangeOpMode(int op_mode)
 {
+    DisableAll();
     try
     {
         OPM402 eMode;
@@ -187,7 +181,7 @@ void HwTmIntf::ChangeOpMode(int op_mode)
         {
             case 0: //position mode
                 eMode = OPM402_CYCLIC_SYNC_POSITION_MODE;
-            case 1:
+            case 1: //torque mode
                 eMode = OPM402_CYCLIC_SYNC_TORQUE_MODE;
         }
 
@@ -207,12 +201,22 @@ void HwTmIntf::ChangeOpMode(int op_mode)
     {
         Exception(exp);
     }
+    ResetAll();
+    EnableAll();
 }
 
-void HwTmIntf::ReadENC(array<int, JNT_NUM> enc_cnts)
+vector<double> HwTmIntf::ReadENC()
 {
+    vector<double> enc_cnts;
     for (int i = 0; i < JNT_NUM; i++)
     {
         enc_cnts[i] = cAxis[i].GetActualPosition();
     }
+    return enc_cnts;
+}
+
+
+void HwTmIntf::MoveTorque(vector<double> torque_cmd)
+{
+
 }
