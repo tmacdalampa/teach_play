@@ -5,14 +5,13 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
 
+#include "teach_play/hardware_transmission_interface.h"
 
 #include <array>
 #include <eigen3/Eigen/Eigen>
 #include <eigen3/Eigen/Dense>
 #include <string>
 #include <cmath>
-
-#include "teach_play/hardware_transmission_interface.h"
 
 #define JNT_NUM 6
 #define PI 3.14157
@@ -27,7 +26,7 @@ using namespace Eigen;
 class Robot
 {
 public:
-	HwTmIntf ElmoMaster;
+	HwTmIntf* ElmoMaster;
 
 	ros::Publisher joint_state_pub;
 	ros::Publisher robot_pose_pub;

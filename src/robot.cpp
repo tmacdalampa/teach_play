@@ -3,6 +3,7 @@
 
 Robot::Robot(ros::NodeHandle *nh)
 {	
+	ElmoMaster = new HwTmIntf;
 
 	if( !nh->getParam("/enc_resolution", _enc_resolution))
     	ROS_ERROR("Failed to get parameter from server.");
@@ -49,13 +50,13 @@ Robot::Robot(ros::NodeHandle *nh)
 
 Robot::~Robot()
 {
-
+	delete ElmoMaster;
 }
 
 
 void Robot::JointStatesPublisher()
 {
-	ElmoMaster.ReadENC(_enc_cnts, _vel_dir);
+	ElmoMaster->ReadENC(_enc_cnts, _vel_dir);
 	
 	for (int i = 0; i < JNT_NUM; i++)
     {
@@ -87,7 +88,7 @@ void Robot::RobotPosePublisher()
 
 bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
 {
-	ElmoMaster.ChangeOpMode(req.data); //0(false for position mode) 1(true for torque mode)
+	ElmoMaster->ChangeOpMode(req.data); //0(false for position mode) 1(true for torque mode)
 	if (req.data == true)
 	{
 		torque_mode_flag = true;
@@ -159,7 +160,7 @@ void Robot::UpdateTorque()
 		_axis_torque_cmd[i] = g_torque[i] + aux_torque[i];
 	}
 
-	ElmoMaster.MoveTorque(_axis_torque_cmd);
+	ElmoMaster->MoveTorque(_axis_torque_cmd);
 }
 
 void Robot::GravityComp(vector<double> &g_torque, vector<double> &axis_deg)

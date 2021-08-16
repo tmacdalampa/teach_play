@@ -9,8 +9,6 @@
 #include <vector>
 #include <string>
 #include "teach_play/robot.h"
-#include "teach_play/hardware_transmission_interface.h"
-
 
 using namespace std;
 
