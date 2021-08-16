@@ -19,9 +19,9 @@ int main(int argc, char** argv)
   ros::Rate rate(10);
 
   Robot scorpio_arm(&nh);
-  //HwTmIntf Master;
+
   
-  #if 0
+  #if 1
   while(ros::ok())
   {
     
@@ -32,7 +32,6 @@ int main(int argc, char** argv)
   		scorpio_arm.UpdateTorque();
   	}
   	
-    cout << "hello" << endl;
   	ros::spinOnce();
   	rate.sleep();
   }

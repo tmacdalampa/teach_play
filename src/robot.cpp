@@ -40,11 +40,11 @@ Robot::Robot(ros::NodeHandle *nh)
     torque_mode_flag = false;
     for(int i = 0; i<JNT_NUM; i++)
     {
-    	_axis_deg[i] = 0;
-		_robot_pose[i] = 0;
-		_enc_cnts[i] = 0;
-		_axis_torque_cmd[i] = 0;
-		_vel_dir[i] = 0;
+    	_axis_deg.push_back(0);
+		_robot_pose.push_back(0);
+		_enc_cnts.push_back(0);
+		_axis_torque_cmd.push_back(0);
+		_vel_dir.push_back(0);
 	}
 
 }
