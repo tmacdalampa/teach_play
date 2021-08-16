@@ -34,6 +34,9 @@ void Exception(CMMCException exp)
 HwTmIntf::HwTmIntf()
 {    
     InitConnection();
+    //EnableAll(0);
+    cout << "HwTmIntf constructor done" << endl;
+
 }
 
 HwTmIntf::~HwTmIntf()

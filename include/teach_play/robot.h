@@ -24,7 +24,6 @@ using namespace std;
 using namespace Eigen;
 
 
-
 class Robot
 {
 public:

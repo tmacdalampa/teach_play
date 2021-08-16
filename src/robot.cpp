@@ -1,8 +1,5 @@
 #include "teach_play/robot.h"
 
-using namespace std;
-
-
 
 Robot::Robot(ros::NodeHandle *nh)
 {	
@@ -28,10 +25,10 @@ Robot::Robot(ros::NodeHandle *nh)
     if( !nh->getParam("/M", _M))
     	ROS_ERROR("Failed to get parameter from server.");
 
-    if( !nh->getParam("/motor_torque_const:", _motor_torque_const))
+    if( !nh->getParam("/motor_torque_const", _motor_torque_const))
     	ROS_ERROR("Failed to get parameter from server.");
 
-    if( !nh->getParam("/motor_friction_current:", _motor_friction_current))
+    if( !nh->getParam("/motor_friction_current", _motor_friction_current))
     	ROS_ERROR("Failed to get parameter from server.");
 
     joint_state_pub = nh->advertise<sensor_msgs::JointState>("/joint_states", 10);
@@ -46,6 +43,7 @@ Robot::Robot(ros::NodeHandle *nh)
 		_robot_pose[i] = 0;
 		_enc_cnts[i] = 0;
 		_axis_torque_cmd[i] = 0;
+		_vel_dir[i] = 0;
 	}
 }
 
