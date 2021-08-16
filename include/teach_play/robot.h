@@ -22,7 +22,7 @@
 using namespace std;
 using namespace Eigen;
 
-
+class HwTmIntf;
 class Robot
 {
 public:

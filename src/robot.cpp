@@ -46,6 +46,7 @@ Robot::Robot(ros::NodeHandle *nh)
 		_axis_torque_cmd[i] = 0;
 		_vel_dir[i] = 0;
 	}
+
 }
 
 Robot::~Robot()

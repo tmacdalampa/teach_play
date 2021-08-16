@@ -33,7 +33,7 @@ void Exception(CMMCException exp)
 
 HwTmIntf::HwTmIntf()
 {    
-    InitConnection();
+    //InitConnection();
     //EnableAll(0);
     cout << "HwTmIntf constructor done" << endl;
 
@@ -50,29 +50,32 @@ void HwTmIntf::InitConnection()
     ELMO_INT32 iEventMask = 0x7FFFFFFF;
     const ELMO_PINT8 cHostIP= (char*)"192.168.1.7";
     const ELMO_PINT8 cDestIP= (char*)"192.168.1.3";
-
+    
+    //cout << "A" << endl;
     // Set Try-Catch flag Enable\Disable
     CMMCPPGlobal::Instance()->SetThrowFlag(true,false);
     CMMCPPGlobal::Instance()->SetThrowWarningFlag(false);
-
+    //cout << "B" << endl;
     //create connection
     gConnHndl = gConn.ConnectRPCEx(cHostIP, cDestIP, iEventMask, (MMC_MB_CLBK)NULL);
     gConn.GetVersion();
-
+    //cout << "C" << endl;
     // Register Run Time Error Callback function
     pRTEClbk = (RTE_CLBKP)OnRunTimeError;
     CMMCPPGlobal::Instance()->RegisterRTE(pRTEClbk);
-
+    //cout << "D" << endl;
     // Axes initialization
+    
   	cAxis[0].InitAxisData("a01", gConnHndl);
     cAxis[1].InitAxisData("a02", gConnHndl);
   	cAxis[2].InitAxisData("a03", gConnHndl);
     cAxis[3].InitAxisData("a04", gConnHndl);
   	cAxis[4].InitAxisData("a05", gConnHndl);
   	cAxis[5].InitAxisData("a06", gConnHndl);
-        
+    //cout << "E" << endl;   
     cGrpRef.InitAxisData("v01",gConnHndl); //add this line and GG
-
+    //cout << "F" << endl;
+    
 }
 
 void HwTmIntf::EnableAll(int op_mode)
