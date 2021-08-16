@@ -129,15 +129,15 @@ Matrix4d Robot::GetTFMatrix(double axis_deg, int id)
 
 void Robot::FK(vector<double> &robot_pose, vector<double> &axis_deg)
 {
-	Matrix4d T01 = GetTFMatrix(axis_deg[0], 1);
-	Matrix4d T12 = GetTFMatrix(axis_deg[1], 2); 
-	Matrix4d T23 = GetTFMatrix(axis_deg[2], 3); 
-	Matrix4d T34 = GetTFMatrix(axis_deg[3], 4);
-	Matrix4d T45 = GetTFMatrix(axis_deg[4], 5);
-	Matrix4d T56 = GetTFMatrix(axis_deg[5], 6);
-	Matrix4d T06 = T01*T12*T23*T34*T45*T56;
+	_T01 = GetTFMatrix(axis_deg[0], 1);
+	_T12 = GetTFMatrix(axis_deg[1], 2); 
+	_T23 = GetTFMatrix(axis_deg[2], 3); 
+	_T34 = GetTFMatrix(axis_deg[3], 4);
+	_T45 = GetTFMatrix(axis_deg[4], 5);
+	_T56 = GetTFMatrix(axis_deg[5], 6);
+	_T06 = _T01*_T12*_T23*_T34*_T45*_T56;
 	
-	robot_pose = {T06(0,3),T06(1,3),T06(2,3),0,0,0};
+	robot_pose = {_T06(0,3),_T06(1,3),_T06(2,3),0,0,0};
 }
 
 void Robot::UpdateTorque()
@@ -160,6 +160,15 @@ void Robot::GravityComp(vector<double>&g_torque, vector<double> &axis_deg)
 	{
 		g_torque[i] = 0;
 	}
-	
+	Vector4d o(0,0,0,1);
+	Vector3d e(0,0,1);
 
+	//first calculate axis 2 torque
+	//gravity torque caused by axis3 on axis2
+	MatrixXd r23_0 = _T01*_T12*_T23*o;
+
+	Vector4d F3(0,0,-_M[2]*g);
+	
+	MatrixXd T32 = r23_0.cross(F3);
 }
+

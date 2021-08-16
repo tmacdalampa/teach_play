@@ -18,23 +18,22 @@ int main(int argc, char** argv)
   	ros::NodeHandle nh;
   	ros::Rate rate(10);
 
-	#if 1
   	Robot scorpio_arm(&nh);
-  	#else
-  	Robot scorpio_arm(nh);
-  	#endif
   	
+  	#if 1
   	while(ros::ok())
   	{
+  		scorpio_arm.JointStatesPublisher();
+  		scorpio_arm.RobotPosePublisher();
   		if (scorpio_arm.torque_mode_flag == true)
   		{
   			//scorpio_arm.UpdateTorque();
   		}
-  		scorpio_arm.JointStatesPublisher();
+  		
   		ros::spinOnce();
   		rate.sleep();
   	}
-	
+  	#endif
 
 	return 0;
 }

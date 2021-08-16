@@ -218,6 +218,15 @@ include_directories(
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
+
+add_executable(eigen_test
+  src/eigen_test.cpp
+)
+
+target_link_libraries(eigen_test
+  ${catkin_LIBRARIES}
+)
+
 add_executable(teach_and_play
   src/main.cpp
   src/robot.cpp

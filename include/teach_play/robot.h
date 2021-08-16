@@ -19,6 +19,7 @@
 #define PI 3.14157
 #define DEG_PER_REV 360
 #define DEG2RAD 0.0017453
+#define g 9.81
 
 using namespace std;
 using namespace Eigen;
@@ -51,11 +52,14 @@ private:
 	vector<double> _alpha;
 	vector<double> _d;
 	vector<double> _aux_torque;
+	vector<double> _M;
 	int _enc_resolution;
 
+	Matrix4d _T01, _T12, _T23, _T34, _T45, _T56 , _T06;
 	vector<double> _axis_deg;
 	vector<double> _robot_pose;
 	vector<double> _axis_torque_cmd;
+
 
 	vector<double> _enc_cnts;
 
