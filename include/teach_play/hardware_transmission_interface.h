@@ -1,6 +1,8 @@
 #ifndef HARDEARE_TRANSMISSION_INTERFACE
 #define HARDEARE_TRANSMISSION_INTERFACE
 
+#include "teach_play/def.h"
+
 //include for C++
 #include <iostream>
 #include <sstream>
@@ -17,8 +19,6 @@
 
 #define JNT_NUM 6
 
-
-
 class HwTmIntf
 {
   public:
@@ -26,11 +26,11 @@ class HwTmIntf
     ~HwTmIntf();
 
     void InitConnection();
-    void EnableAll();
+    void EnableAll(int op_mode);
     void DisableAll();
     void ResetAll();
     void ChangeOpMode(int op_mode);
-    vector<double> ReadENC();
+    void ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
     void MoveTorque(vector<double> torque_cmd);
 
 

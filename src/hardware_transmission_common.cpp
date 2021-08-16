@@ -72,7 +72,7 @@ void HwTmIntf::InitConnection()
 
 }
 
-void HwTmIntf::EnableAll()
+void HwTmIntf::EnableAll(int op_mode)
 {
     try
     { 
@@ -87,9 +87,11 @@ void HwTmIntf::EnableAll()
             }
             //ROS_INFO("axis %d status is %d (STAND_STILL) and %d (DISCRETE_MOTION)", id, (cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK), (cAxis[id].ReadStatus()& NC_AXIS_DISCRETE_MOTION_MASK));
         } 
-
-        cGrpRef.GroupEnable();
-        while (!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
+        if (op_mode == 0)
+        {
+            cGrpRef.GroupEnable();
+            while (!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
+        }
 
         //ROS_INFO("EnableAll Done");
         cout << "enable success" <<endl;
@@ -173,6 +175,7 @@ void HwTmIntf::ResetAll()
 void HwTmIntf::ChangeOpMode(int op_mode)
 {
     DisableAll();
+    ResetAll();
     try
     {
         OPM402 eMode;
@@ -202,21 +205,35 @@ void HwTmIntf::ChangeOpMode(int op_mode)
         Exception(exp);
     }
     ResetAll();
-    EnableAll();
+    EnableAll(op_mode);
 }
 
-vector<double> HwTmIntf::ReadENC()
+void HwTmIntf::ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir)
 {
-    vector<double> enc_cnts;
     for (int i = 0; i < JNT_NUM; i++)
     {
         enc_cnts[i] = cAxis[i].GetActualPosition();
+        
+        if(cAxis[i].GetActualVelocity() > 1000)
+        {   
+            vel_dir[i] = VelDir::POSITIVE;
+        }
+        else if(cAxis[i].GetActualVelocity() < -1000)
+        {
+            vel_dir[i] = VelDir::NEGATIVE;
+        }
+        else
+        {
+            vel_dir[i] = VelDir::STANDSTILL;
+        }    
     }
-    return enc_cnts;
 }
 
 
 void HwTmIntf::MoveTorque(vector<double> torque_cmd)
 {
-
+    for (int i = 0; i < JNT_NUM; i++)
+    {   
+        cAxis[i].MoveTorque(torque_cmd[i], 10000, 100000, MC_ABORTING_MODE);
+    }
 }
