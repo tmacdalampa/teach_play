@@ -29,8 +29,8 @@ class HwTmIntf
     void EnableAll();
     void DisableAll();
     void ResetAll();
-    void ChangeOpMode(bool op_mode);
-    void SelectModeProcess(bool op_mode);
+    void ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag);
+    void SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
     void ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
     void MoveTorque(vector<double> torque_cmd);
 

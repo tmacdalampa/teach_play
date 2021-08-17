@@ -39,7 +39,7 @@ public:
 	bool SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 	void UpdateTorque();
 
-	bool torque_mode_flag;
+	bool torque_mode_ready_flag;
 
 
 

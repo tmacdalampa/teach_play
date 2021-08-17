@@ -37,7 +37,7 @@ Robot::Robot(ros::NodeHandle *nh)
 
     control_mode_service = nh->advertiseService("/select_mode_service", &Robot::SelectModeCallback, this);
 
-    torque_mode_flag = false;
+    torque_mode_ready_flag = false;
     for(int i = 0; i<JNT_NUM; i++)
     {
     	_axis_deg.push_back(0);
@@ -94,10 +94,10 @@ void Robot::RobotPosePublisher()
 
 bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
 {
-	ElmoMaster->SelectModeProcess(req.data); //0(false for position mode) 1(true for torque mode)
+	ElmoMaster->SelectModeProcess(req.data, torque_mode_ready_flag); //0(false for position mode) 1(true for torque mode)
 	if (req.data == true)
 	{
-		torque_mode_flag = true;
+		//torque_mode_ready_flag = true;
 		res.message = "torque mode done";
 	}
 	else

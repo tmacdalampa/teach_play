@@ -34,8 +34,9 @@ void Exception(CMMCException exp)
 HwTmIntf::HwTmIntf()
 {    
     InitConnection();
-    //DisableAll(false);
-    //cout << "HwTmIntf constructor done" << endl;
+    ResetAll();
+    //ChangeOpMode(1);
+    EnableAll();
 
 }
 
@@ -78,12 +79,15 @@ void HwTmIntf::InitConnection()
     
 }
 
-void HwTmIntf::SelectModeProcess(bool op_mode)
+void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
 {
+    //cout << "hello" << op_mode << endl;
+    #if 1
     DisableAll();
     ResetAll();
-    ChangeOpMode(op_mode);
+    ChangeOpMode(op_mode, torque_mode_ready_flag);
     EnableAll();
+    #endif
 
 }
 
@@ -115,7 +119,6 @@ void HwTmIntf::EnableAll()
 
 void HwTmIntf::DisableAll()
 {
-	
     try
     {
         for(int id = 0; id < JNT_NUM; id++)
@@ -168,7 +171,7 @@ void HwTmIntf::ResetAll()
     }
 }
 
-void HwTmIntf::ChangeOpMode(bool op_mode)
+void HwTmIntf::ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag)
 {
     try
     {
@@ -179,6 +182,7 @@ void HwTmIntf::ChangeOpMode(bool op_mode)
         else
         {
             eMode = OPM402_CYCLIC_SYNC_POSITION_MODE;
+            torque_mode_ready_flag = false;
         }
 
         for(int id = 0; id < JNT_NUM; id++)
@@ -187,9 +191,13 @@ void HwTmIntf::ChangeOpMode(bool op_mode)
             {
                 cAxis[id].SetOpMode(eMode);
                 while( cAxis[id].GetOpMode() != eMode);
+                
+            }
+            if (cAxis[id].GetOpMode() == OPM402_CYCLIC_SYNC_TORQUE_MODE)
+            {
+                torque_mode_ready_flag = true;
             }
         }
-        
         cout << "ChangeOpMode Done" << endl;
     }
     catch(CMMCException exp)
