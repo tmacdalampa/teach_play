@@ -26,9 +26,9 @@ class HwTmIntf
     ~HwTmIntf();
 
     void InitConnection();
-    void EnableAll();
-    void DisableAll();
-    void ResetAll();
+    void EnableAll(bool op_mode);
+    void DisableAll(bool op_mode);
+    void ResetAll(bool op_mode);
     void ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag);
     void SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
     void ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);

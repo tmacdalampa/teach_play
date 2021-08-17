@@ -97,7 +97,6 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 	ElmoMaster->SelectModeProcess(req.data, torque_mode_ready_flag); //0(false for position mode) 1(true for torque mode)
 	if (req.data == true)
 	{
-		//torque_mode_ready_flag = true;
 		res.message = "torque mode done";
 	}
 	else
