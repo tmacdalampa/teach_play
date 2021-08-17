@@ -94,7 +94,7 @@ void Robot::RobotPosePublisher()
 
 bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
 {
-	ElmoMaster->ChangeOpMode(req.data); //0(false for position mode) 1(true for torque mode)
+	ElmoMaster->SelectModeProcess(req.data); //0(false for position mode) 1(true for torque mode)
 	if (req.data == true)
 	{
 		torque_mode_flag = true;

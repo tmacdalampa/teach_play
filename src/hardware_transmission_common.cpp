@@ -41,16 +41,7 @@ HwTmIntf::HwTmIntf()
 
 HwTmIntf::~HwTmIntf()
 {
-    int op_mode;
-    if (eMode == OPM402_CYCLIC_SYNC_POSITION_MODE)
-    {
-        op_mode = false;
-    }
-    else
-    {
-        op_mode = true;
-    }
-    DisableAll(op_mode);
+    DisableAll();
 }
 
 void HwTmIntf::InitConnection()
@@ -87,7 +78,16 @@ void HwTmIntf::InitConnection()
     
 }
 
-void HwTmIntf::EnableAll(bool op_mode)
+void HwTmIntf::SelectModeProcess(bool op_mode)
+{
+    DisableAll();
+    ResetAll();
+    ChangeOpMode(op_mode);
+    EnableAll();
+
+}
+
+void HwTmIntf::EnableAll()
 {
     try
     { 
@@ -101,11 +101,6 @@ void HwTmIntf::EnableAll(bool op_mode)
                 while (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
             }
             //ROS_INFO("axis %d status is %d (STAND_STILL) and %d (DISCRETE_MOTION)", id, (cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK), (cAxis[id].ReadStatus()& NC_AXIS_DISCRETE_MOTION_MASK));
-        } 
-        if (op_mode == false)
-        {
-            cGrpRef.GroupEnable();
-            while (!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
         }
 
         //ROS_INFO("EnableAll Done");
@@ -118,16 +113,11 @@ void HwTmIntf::EnableAll(bool op_mode)
     }
 }
 
-void HwTmIntf::DisableAll(bool op_mode)
+void HwTmIntf::DisableAll()
 {
 	
     try
     {
-        if (op_mode == false)
-        {
-            cGrpRef.GroupDisable();
-            while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
-        }
         for(int id = 0; id < JNT_NUM; id++)
         {
             if (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
@@ -154,7 +144,7 @@ void HwTmIntf::DisableAll(bool op_mode)
 }
 
 
-void HwTmIntf::ResetAll(bool op_mode)
+void HwTmIntf::ResetAll()
 {
 	try
     {
@@ -164,14 +154,6 @@ void HwTmIntf::ResetAll(bool op_mode)
             {
                 cAxis[id].Reset();
                 while( !(cAxis[id].ReadStatus() & NC_AXIS_DISABLED_MASK));
-            }
-        }
-        if (op_mode == false )
-        {
-            if (cGrpRef.ReadStatus() & NC_GROUP_ERROR_STOP_MASK)
-            {
-                cGrpRef.GroupReset();
-                while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
             }
         }
 		
@@ -188,9 +170,6 @@ void HwTmIntf::ResetAll(bool op_mode)
 
 void HwTmIntf::ChangeOpMode(bool op_mode)
 {
-    //DisableAll(op_mode);
-    //ResetAll(op_mode);
-
     try
     {
         if (op_mode == true)
@@ -217,7 +196,6 @@ void HwTmIntf::ChangeOpMode(bool op_mode)
     {
         Exception(exp);
     }
-    EnableAll(op_mode);
 }
 
 void HwTmIntf::ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir)
