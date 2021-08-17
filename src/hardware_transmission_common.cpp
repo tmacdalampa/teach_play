@@ -34,23 +34,21 @@ void Exception(CMMCException exp)
 HwTmIntf::HwTmIntf()
 {    
     InitConnection();
-    ResetAll(false);
+    //ResetAll(false);
     //ChangeOpMode(false); //default position mode
-    EnableAll(false);
+    //EnableAll(false);
 
 }
 
 HwTmIntf::~HwTmIntf()
 {
     OPM402 eMode_now = cAxis[5].GetOpMode();
-    if (eMode_now == OPM402_CYCLIC_SYNC_TORQUE_MODE)
-    {    
-        DisableAll(1);
-    }
-    else
+    if (eMode_now == OPM402_CYCLIC_SYNC_POSITION_MODE)
     {
-        DisableAll(0);
+        DisableGroup();
     }
+    DisableAll();
+
 }
 
 void HwTmIntf::InitConnection()
@@ -80,28 +78,9 @@ void HwTmIntf::InitConnection()
   	cAxis[2].InitAxisData("a03", gConnHndl);
     cAxis[3].InitAxisData("a04", gConnHndl);
   	cAxis[4].InitAxisData("a05", gConnHndl);
-  	cAxis[5].InitAxisData("a06", gConnHndl);
-    //cout << "E" << endl;   
+  	cAxis[5].InitAxisData("a06", gConnHndl);   
     cGrpRef.InitAxisData("v01",gConnHndl); //add this line and GG
-    //cout << "F" << endl;
-    /*
-    try
-    {
-        cGrpRef.RemoveAxisFromGroup(NC_NODE_1_ID);
-    }
-    catch(CMMCException exp)
-    {
-        Exception(exp);
-    }
-    */
-    /*
-    cGrpRef.RemoveAxisFromGroup(NC_NODE_1_ID);
-    cGrpRef.RemoveAxisFromGroup(NC_NODE_2_ID);
-    cGrpRef.RemoveAxisFromGroup(NC_NODE_3_ID);
-    cGrpRef.RemoveAxisFromGroup(NC_NODE_4_ID);
-    cGrpRef.RemoveAxisFromGroup(NC_NODE_5_ID);
-    cGrpRef.RemoveAxisFromGroup(NC_NODE_6_ID);
-    */
+    
 }
 
 void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
@@ -111,29 +90,23 @@ void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
     {
         if (eMode_now != OPM402_CYCLIC_SYNC_TORQUE_MODE)
         {
-            DisableAll(op_mode);
-            /*
-            cGrpRef.RemoveAxisFromGroup(NC_NODE_1_ID);
-            cGrpRef.RemoveAxisFromGroup(NC_NODE_2_ID);
-            cGrpRef.RemoveAxisFromGroup(NC_NODE_3_ID);
-            cGrpRef.RemoveAxisFromGroup(NC_NODE_4_ID);
-            cGrpRef.RemoveAxisFromGroup(NC_NODE_5_ID);
-            cGrpRef.RemoveAxisFromGroup(NC_NODE_6_ID);
-            */
-            ResetAll(op_mode);
+            //cout << "hello" << endl;
+            DisableGroup();
+            //DisableAll(op_mode);
+            //ResetAll(op_mode);
             ChangeOpMode(op_mode, torque_mode_ready_flag);
-            EnableAll(op_mode);
         }
+        EnableAll(op_mode);
     }
     else if (op_mode == false)
     {
         if (eMode_now != OPM402_CYCLIC_SYNC_POSITION_MODE)
         {
-            DisableAll(op_mode);
-            ResetAll(op_mode);
+            //DisableAll(op_mode);
+            //ResetAll(op_mode);
             ChangeOpMode(op_mode, torque_mode_ready_flag);
-            EnableAll(op_mode);
         }
+        EnableAll(op_mode);
     }
 
 
@@ -171,7 +144,7 @@ void HwTmIntf::EnableAll(bool op_mode)
     }
 }
 
-void HwTmIntf::DisableAll(bool op_mode)
+void HwTmIntf::DisableAll()
 {
     try
     {
@@ -188,12 +161,9 @@ void HwTmIntf::DisableAll(bool op_mode)
                 while (!(cAxis[id].ReadStatus()& NC_AXIS_DISABLED_MASK));
             }
         }
+        
 
-        if (op_mode == false)
-        {
-            cGrpRef.GroupDisable();
-            while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
-        }
+
         cout << "disable done" << endl;
 
     }
@@ -204,6 +174,18 @@ void HwTmIntf::DisableAll(bool op_mode)
 
 }
 
+void HwTmIntf::DisableGroup()
+{
+    try
+    {   
+        cGrpRef.GroupDisable();
+        while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+    }
+}
 
 void HwTmIntf::ResetAll(bool op_mode)
 {

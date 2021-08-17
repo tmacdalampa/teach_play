@@ -28,10 +28,12 @@ int main(int argc, char** argv)
     scorpio_arm.RobotPosePublisher();
   	#if 1
     //cout << scorpio_arm.torque_mode_ready_flag << endl;
+    
     if (scorpio_arm.torque_mode_ready_flag == true)
   	{
   		scorpio_arm.UpdateTorque();
   	}
+
   	#endif
   	ros::spinOnce();
   	rate.sleep();

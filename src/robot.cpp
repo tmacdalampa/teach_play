@@ -105,7 +105,7 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 	}
 	res.success = true;
 
-	cout << res.message << endl;
+	//cout << res.message << endl;
     return true;
 }
 

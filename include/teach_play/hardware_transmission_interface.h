@@ -27,7 +27,8 @@ class HwTmIntf
 
     void InitConnection();
     void EnableAll(bool op_mode);
-    void DisableAll(bool op_mode);
+    void DisableAll();
+    void DisableGroup();
     void ResetAll(bool op_mode);
     void ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag);
     void SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
