@@ -36,7 +36,7 @@ HwTmIntf::HwTmIntf()
     InitConnection();
     ResetAll(false);
     //ChangeOpMode(false); //default position mode
-    EnableAll(true);
+    EnableAll(false);
 
 }
 
@@ -84,7 +84,24 @@ void HwTmIntf::InitConnection()
     //cout << "E" << endl;   
     cGrpRef.InitAxisData("v01",gConnHndl); //add this line and GG
     //cout << "F" << endl;
-    
+    /*
+    try
+    {
+        cGrpRef.RemoveAxisFromGroup(NC_NODE_1_ID);
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+    }
+    */
+    /*
+    cGrpRef.RemoveAxisFromGroup(NC_NODE_1_ID);
+    cGrpRef.RemoveAxisFromGroup(NC_NODE_2_ID);
+    cGrpRef.RemoveAxisFromGroup(NC_NODE_3_ID);
+    cGrpRef.RemoveAxisFromGroup(NC_NODE_4_ID);
+    cGrpRef.RemoveAxisFromGroup(NC_NODE_5_ID);
+    cGrpRef.RemoveAxisFromGroup(NC_NODE_6_ID);
+    */
 }
 
 void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
@@ -92,9 +109,17 @@ void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
     OPM402 eMode_now = cAxis[5].GetOpMode();
     if (op_mode == true)
     {
-        if (eMode_now == OPM402_CYCLIC_SYNC_TORQUE_MODE)
+        if (eMode_now != OPM402_CYCLIC_SYNC_TORQUE_MODE)
         {
             DisableAll(op_mode);
+            /*
+            cGrpRef.RemoveAxisFromGroup(NC_NODE_1_ID);
+            cGrpRef.RemoveAxisFromGroup(NC_NODE_2_ID);
+            cGrpRef.RemoveAxisFromGroup(NC_NODE_3_ID);
+            cGrpRef.RemoveAxisFromGroup(NC_NODE_4_ID);
+            cGrpRef.RemoveAxisFromGroup(NC_NODE_5_ID);
+            cGrpRef.RemoveAxisFromGroup(NC_NODE_6_ID);
+            */
             ResetAll(op_mode);
             ChangeOpMode(op_mode, torque_mode_ready_flag);
             EnableAll(op_mode);
@@ -102,7 +127,7 @@ void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
     }
     else if (op_mode == false)
     {
-        if (eMode_now == OPM402_CYCLIC_SYNC_POSITION_MODE)
+        if (eMode_now != OPM402_CYCLIC_SYNC_POSITION_MODE)
         {
             DisableAll(op_mode);
             ResetAll(op_mode);
