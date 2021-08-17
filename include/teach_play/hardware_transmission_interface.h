@@ -26,10 +26,10 @@ class HwTmIntf
     ~HwTmIntf();
 
     void InitConnection();
-    void EnableAll(int op_mode);
-    void DisableAll();
-    void ResetAll();
-    void ChangeOpMode(int op_mode);
+    void EnableAll(bool op_mode);
+    void DisableAll(bool op_mode);
+    void ResetAll(bool op_mode);
+    void ChangeOpMode(bool op_mode);
     void ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
     void MoveTorque(vector<double> torque_cmd);
 
@@ -44,6 +44,7 @@ class HwTmIntf
     CMMCHostComm cHost ;
     MMC_MOTIONPARAMS_SINGLE stSingleDefault ;
     RTE_CLBKP pRTEClbk;
+    OPM402 eMode;
 
 };
 

@@ -51,6 +51,11 @@ Robot::Robot(ros::NodeHandle *nh)
 
 Robot::~Robot()
 {
+	_axis_deg.clear();
+	_robot_pose.clear();
+	_enc_cnts.clear();
+	_axis_torque_cmd.clear();
+	_vel_dir.clear();
 	delete ElmoMaster;
 }
 
@@ -61,7 +66,7 @@ void Robot::JointStatesPublisher()
 	
 	for (int i = 0; i < JNT_NUM; i++)
     {
-    	_axis_deg[i] = ((_enc_cnts[i]- _zero_points[i])/_gear_ratios[i])*( DEG_PER_REV /_enc_resolution);
+    	_axis_deg[i] = (((_enc_cnts[i]- _zero_points[i])/_gear_ratios[i]) *DEG_PER_REV) /_enc_resolution;
 	}
 
 	sensor_msgs::JointState joint_states;
@@ -69,7 +74,7 @@ void Robot::JointStatesPublisher()
 
 	t.stamp = ros::Time::now();
   	joint_states.header = t; 
-  	joint_states.position = _enc_cnts;	
+  	joint_states.position = _axis_deg;	
 	joint_state_pub.publish(joint_states);
 }
 
@@ -151,8 +156,8 @@ void Robot::FK(vector<double> &robot_pose, vector<double> &axis_deg)
 
 void Robot::UpdateTorque()
 {
-	vector<double> g_torque;
-	vector<double> aux_torque;
+	array<double, JNT_NUM> g_torque;
+	array<double, JNT_NUM> aux_torque;
 	GravityComp(g_torque, _axis_deg);
 	AuxComp(aux_torque, _vel_dir);
 
@@ -164,7 +169,7 @@ void Robot::UpdateTorque()
 	ElmoMaster->MoveTorque(_axis_torque_cmd);
 }
 
-void Robot::GravityComp(vector<double> &g_torque, vector<double> &axis_deg)
+void Robot::GravityComp(array<double, JNT_NUM> &g_torque, vector<double> &axis_deg)
 {
 	
 	for(int i = 0; i<JNT_NUM; i++)
@@ -219,7 +224,7 @@ void Robot::GravityComp(vector<double> &g_torque, vector<double> &axis_deg)
 	#endif
 }
 
-void Robot::AuxComp(vector<double> &aux_torque, vector<int> &vel_dir)
+void Robot::AuxComp(array<double, JNT_NUM> &aux_torque, vector<int> &vel_dir)
 {
 	for(int i = 0; i<JNT_NUM; i++)
 	{

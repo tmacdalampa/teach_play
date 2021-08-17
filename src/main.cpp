@@ -26,9 +26,11 @@ int main(int argc, char** argv)
   {
     
     scorpio_arm.JointStatesPublisher();
-  	scorpio_arm.RobotPosePublisher();
-  	if (scorpio_arm.torque_mode_flag == true)
+    scorpio_arm.RobotPosePublisher();
+  	
+    if (scorpio_arm.torque_mode_flag == true)
   	{
+      
   		scorpio_arm.UpdateTorque();
   	}
   	
@@ -36,7 +38,6 @@ int main(int argc, char** argv)
   	rate.sleep();
   }
   #endif
-  ros::spin();
 
 	return 0;
 }

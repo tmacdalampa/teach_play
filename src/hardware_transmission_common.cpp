@@ -33,15 +33,24 @@ void Exception(CMMCException exp)
 
 HwTmIntf::HwTmIntf()
 {    
-    //InitConnection();
-    //EnableAll(0);
-    cout << "HwTmIntf constructor done" << endl;
+    InitConnection();
+    //DisableAll(false);
+    //cout << "HwTmIntf constructor done" << endl;
 
 }
 
 HwTmIntf::~HwTmIntf()
 {
-    DisableAll();
+    int op_mode;
+    if (eMode == OPM402_CYCLIC_SYNC_POSITION_MODE)
+    {
+        op_mode = false;
+    }
+    else
+    {
+        op_mode = true;
+    }
+    DisableAll(op_mode);
 }
 
 void HwTmIntf::InitConnection()
@@ -78,7 +87,7 @@ void HwTmIntf::InitConnection()
     
 }
 
-void HwTmIntf::EnableAll(int op_mode)
+void HwTmIntf::EnableAll(bool op_mode)
 {
     try
     { 
@@ -93,7 +102,7 @@ void HwTmIntf::EnableAll(int op_mode)
             }
             //ROS_INFO("axis %d status is %d (STAND_STILL) and %d (DISCRETE_MOTION)", id, (cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK), (cAxis[id].ReadStatus()& NC_AXIS_DISCRETE_MOTION_MASK));
         } 
-        if (op_mode == 0)
+        if (op_mode == false)
         {
             cGrpRef.GroupEnable();
             while (!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
@@ -109,11 +118,16 @@ void HwTmIntf::EnableAll(int op_mode)
     }
 }
 
-void HwTmIntf::DisableAll()
+void HwTmIntf::DisableAll(bool op_mode)
 {
 	
     try
     {
+        if (op_mode == false)
+        {
+            cGrpRef.GroupDisable();
+            while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
+        }
         for(int id = 0; id < JNT_NUM; id++)
         {
             if (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
@@ -127,28 +141,20 @@ void HwTmIntf::DisableAll()
                 while (!(cAxis[id].ReadStatus()& NC_AXIS_DISABLED_MASK));
             }
         }
-        cGrpRef.GroupDisable();
-        while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
+
 
         cout << "disable done" << endl;
 
     }
 	catch(CMMCException exp)
   	{
-        for(int id = 0; id < JNT_NUM; id++)
-      	{
-            if (cAxis[id].ReadStatus() & NC_AXIS_ERROR_STOP_MASK)
-            {
-                cAxis[id].Reset();
-                while( !(cAxis[id].ReadStatus() & NC_AXIS_DISABLED_MASK));
-            }
-        }
+        Exception(exp);
  	}
 
 }
 
 
-void HwTmIntf::ResetAll()
+void HwTmIntf::ResetAll(bool op_mode)
 {
 	try
     {
@@ -160,11 +166,13 @@ void HwTmIntf::ResetAll()
                 while( !(cAxis[id].ReadStatus() & NC_AXIS_DISABLED_MASK));
             }
         }
-        
-        if (cGrpRef.ReadStatus() & NC_GROUP_ERROR_STOP_MASK)
+        if (op_mode == false )
         {
-            cGrpRef.GroupReset();
-            while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
+            if (cGrpRef.ReadStatus() & NC_GROUP_ERROR_STOP_MASK)
+            {
+                cGrpRef.GroupReset();
+                while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
+            }
         }
 		
         //ROS_INFO("ResetAll Done");
@@ -178,25 +186,24 @@ void HwTmIntf::ResetAll()
     }
 }
 
-void HwTmIntf::ChangeOpMode(int op_mode)
+void HwTmIntf::ChangeOpMode(bool op_mode)
 {
-    DisableAll();
-    ResetAll();
+    //DisableAll(op_mode);
+    //ResetAll(op_mode);
+
     try
     {
-        OPM402 eMode;
-
-        switch(op_mode)
+        if (op_mode == true)
         {
-            case 0: //position mode
-                eMode = OPM402_CYCLIC_SYNC_POSITION_MODE;
-            case 1: //torque mode
-                eMode = OPM402_CYCLIC_SYNC_TORQUE_MODE;
+            eMode = OPM402_CYCLIC_SYNC_TORQUE_MODE;
+        }
+        else
+        {
+            eMode = OPM402_CYCLIC_SYNC_POSITION_MODE;
         }
 
         for(int id = 0; id < JNT_NUM; id++)
-        {
-            
+        {            
             if (cAxis[id].GetOpMode() != eMode)
             {
                 cAxis[id].SetOpMode(eMode);
@@ -204,13 +211,12 @@ void HwTmIntf::ChangeOpMode(int op_mode)
             }
         }
         
-        cout << "ChangeOpMode to Done" << endl;
+        cout << "ChangeOpMode Done" << endl;
     }
     catch(CMMCException exp)
     {
         Exception(exp);
     }
-    ResetAll();
     EnableAll(op_mode);
 }
 

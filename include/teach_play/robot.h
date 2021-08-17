@@ -16,7 +16,7 @@
 #define JNT_NUM 6
 #define PI 3.14157
 #define DEG_PER_REV 360
-#define DEG2RAD 0.0017453
+#define DEG2RAD 0.017453
 #define g 9.81
 
 using namespace std;
@@ -68,8 +68,8 @@ private:
 
 	void FK(vector<double> &robot_pose, vector<double> &axis_deg);
 	Matrix4d GetTFMatrix(double axis_deg, int id);
-	void GravityComp(vector<double> &g_torque, vector<double> &axis_deg);
-	void AuxComp(vector<double> &aux_torque, vector<int> &vel_dir);
+	void GravityComp(array<double, JNT_NUM> &g_torque, vector<double> &axis_deg);
+	void AuxComp(array<double, JNT_NUM> &aux_torque, vector<int> &vel_dir);
 
 
 };
