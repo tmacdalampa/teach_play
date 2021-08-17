@@ -81,7 +81,6 @@ void HwTmIntf::InitConnection()
 
 void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
 {
-    //cout << "hello" << op_mode << endl;
     #if 1
     DisableAll();
     ResetAll();
