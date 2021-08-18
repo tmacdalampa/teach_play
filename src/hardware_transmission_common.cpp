@@ -97,6 +97,11 @@ void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
             ChangeOpMode(op_mode, torque_mode_ready_flag);
         }
         EnableAll(op_mode);
+        
+        if (cAxis[5].GetOpMode() == OPM402_CYCLIC_SYNC_TORQUE_MODE)
+        {
+            torque_mode_ready_flag = true;
+        }
     }
     else if (op_mode == false)
     {

@@ -18,6 +18,7 @@
 #define DEG_PER_REV 360
 #define DEG2RAD 0.017453
 #define g 9.81
+#define HD_eff 0.7
 
 using namespace std;
 using namespace Eigen;

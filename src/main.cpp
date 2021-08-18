@@ -31,7 +31,7 @@ int main(int argc, char** argv)
     
     if (scorpio_arm.torque_mode_ready_flag == true)
   	{
-  		scorpio_arm.UpdateTorque();
+      	scorpio_arm.UpdateTorque();
   	}
 
   	#endif

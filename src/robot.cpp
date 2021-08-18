@@ -149,7 +149,7 @@ void Robot::FK(vector<double> &robot_pose, vector<double> &axis_deg)
 	_T45 = GetTFMatrix(axis_deg[4], 5);
 	_T56 = GetTFMatrix(axis_deg[5], 6);
 	_T06 = _T01*_T12*_T23*_T34*_T45*_T56;
-	
+
 	robot_pose = {_T06(0,3),_T06(1,3),_T06(2,3),0,0,0};
 }
 
@@ -163,6 +163,12 @@ void Robot::UpdateTorque()
 	for(int i = 0; i<JNT_NUM; i++)
 	{
 		_axis_torque_cmd[i] = g_torque[i] + aux_torque[i];
+		#if 1
+		if (_axis_torque_cmd[i] >= 20000)
+		{
+			_axis_torque_cmd[i] = 0;
+		}
+		#endif
 	}
 
 	ElmoMaster->MoveTorque(_axis_torque_cmd);
@@ -175,51 +181,53 @@ void Robot::GravityComp(array<double, JNT_NUM> &g_torque, vector<double> &axis_d
 	{
 		g_torque[i] = 0;
 	}
-	#if 0
+	#if 1
 	//assume O as oroginal point of arm, A as origin point of frame 1 and 2, B as origin point of frame 3, C as interaction of axis456, D as TCP point
 	Vector4d o(0,0,0,1);
 	Vector3d e(0,0,1);
 	Matrix3d R01, R12, R23;
 	R01(0,0) = _T01(0,0);R01(0,1) = _T01(0,1);R01(0,2) = _T01(0,2);
-	R01(1,0) = _T01(1,0);R01(1,1) = _T01(1,1);R01(1,2) = _T01(1,2);
-	R01(2,0) = _T01(2,0);R01(2,1) = _T01(2,1);R01(2,2) = _T01(2,2);
+  	R01(1,0) = _T01(1,0);R01(1,1) = _T01(1,1);R01(1,2) = _T01(1,2);
+  	R01(2,0) = _T01(2,0);R01(2,1) = _T01(2,1);R01(2,2) = _T01(2,2);
 
-	R12(0,0) = _T12(0,0);R12(0,1) = _T12(0,1);R12(0,2) = _T12(0,2);
-	R12(1,0) = _T12(1,0);R12(1,1) = _T12(1,1);R12(1,2) = _T12(1,2);
-	R12(2,0) = _T12(2,0);R12(2,1) = _T12(2,1);R12(2,2) = _T12(2,2);
+  	R12(0,0) = _T12(0,0);R12(0,1) = _T12(0,1);R12(0,2) = _T12(0,2);
+  	R12(1,0) = _T12(1,0);R12(1,1) = _T12(1,1);R12(1,2) = _T12(1,2);
+  	R12(2,0) = _T12(2,0);R12(2,1) = _T12(2,1);R12(2,2) = _T12(2,2);
 
-	R23(0,0) = _T23(0,0);R23(0,1) = _T23(0,1);R23(0,2) = _T23(0,2);
-	R23(1,0) = _T23(1,0);R23(1,1) = _T23(1,1);R23(1,2) = _T23(1,2);
-	R23(2,0) = _T23(2,0);R23(2,1) = _T23(2,1);R23(2,2) = _T12(2,2);
+  	R23(0,0) = _T23(0,0);R23(0,1) = _T23(0,1);R23(0,2) = _T23(0,2);
+  	R23(1,0) = _T23(1,0);R23(1,1) = _T23(1,1);R23(1,2) = _T23(1,2);
+  	R23(2,0) = _T23(2,0);R23(2,1) = _T23(2,1);R23(2,2) = _T23(2,2);
 
 	Vector3d e02 = R01*R12*e;
 	Vector3d e03 = R01*R12*R23*e;
 	//first calculate axis 2 torque
 	//gravity torque caused by axis3 on axis2
 
-	MatrixXd rAB_0 = _T01*_T12*_T23*o; //vector AB view as frame 0;
-	Vector3d rAB(rAB_0(0,0),rAB_0(1,0), rAB_0(2,0));
-
-	Vector3d F3(0,0,-_M[2]*g);
-
-	Vector3d T32 = rAB.cross(F3);
-	double T32_real = T32.dot(e02);
+	Vector4d rAB2  = _T23*o;
+  	Vector3d rAB(rAB2(0,0),rAB2(1,0), rAB2(2,0));
+  	Vector3d rAB_0 =  R01*R12*rAB; //vector AB view as frame 0;
+  	Vector3d F3(0,0,-5*9.81);
+  	Vector3d T32 = rAB_0.cross(F3);
+  	double T32_real = T32.dot(e02);
 
 	//gravity torque caused by axis456 on axis2
-	MatrixXd rAC_0 = rAB_0 + _T01*_T12*_T23*_T34*_T45*o; //AC = AB+BC
-	Vector3d rAC(rAC_0(0,0),rAC_0(1,0), rAC_0(2,0));
-	Vector3d F4(0,0,-(_M[3]+_M[4]+_M[5])*g);
-	Vector3d T42 = rAC.cross(F4);
-	double T42_real = T42.dot(e02);
+	Vector4d rBC3 = _T34*_T45*o;
+  	Vector3d rBC(rBC3(0,0), rBC3(1,0), rBC3(2,0));
+  	Vector3d rBC_0 = R01*R12*R23*rBC;
+  	Vector3d rAC_0 = rAB_0 + rBC_0;
+  	Vector3d F4(0,0,-(7.5*9.81));
+  	Vector3d T42 = rAC_0.cross(F4);
+  	double T42_real = T42.dot(e02);
 
 	//gravity torque caused by axis456 on axis3
-	MatrixXd rBC_0 = _T01*_T12*_T23*_T34*_T45*o;
-	Vector3d rBC(rBC_0(0,0),rBC_0(1,0), rBC_0(2,0));
-	Vector3d T43 = rBC.cross(F4);
-	double T43_real = T43.dot(e03);
+	Vector3d T43 = rBC_0.cross(F4);
+  	double T43_real = T43.dot(e03);
 
-	g_torque[1] = 1000 * (T32_real + T42_real)/_motor_torque_const[1];
-	g_torque[2] = 1000 * T43_real/_motor_torque_const[2];
+	g_torque[1] = -1000 * (((T32_real + T42_real) / _gear_ratios[1])/_motor_torque_const[1])/HD_eff;
+	g_torque[2] = -1000 * ((T43_real/ _gear_ratios[2]) / _motor_torque_const[2])/HD_eff; 
+	//cout << "axis2 motor g torque" << -1000 * ((T32_real + T42_real) / _gear_ratios[1])/_motor_torque_const[1] << endl;
+	//cout << "axis3 motor g torque" << (T43_real/ _gear_ratios[2]) / _motor_torque_const[2]; 
+
 	#endif
 }
 
