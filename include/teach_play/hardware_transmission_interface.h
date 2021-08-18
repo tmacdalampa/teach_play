@@ -12,6 +12,7 @@
 #include <cmath>
 #include <array>
 #include <time.h>
+#include <deque>
 //include for elmo
 #include "MMCPP/OS_PlatformDependSetting.hpp"
 #include "MMCPP/MMCPPlib.hpp"
@@ -34,7 +35,7 @@ class HwTmIntf
     void SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
     void ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
     void MoveTorque(vector<double> torque_cmd);
-
+    void PVTMotionMove(deque<vector<double>> &play_points);
 
   private:
         

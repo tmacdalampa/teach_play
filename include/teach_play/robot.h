@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <std_msgs/Int64.h>
 #include <std_srvs/SetBool.h>
+#include <std_srvs/Trigger.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
 
@@ -12,6 +13,7 @@
 #include <eigen3/Eigen/Dense>
 #include <string>
 #include <cmath>
+#include <deque>
 
 #define JNT_NUM 6
 #define PI 3.14157
@@ -32,12 +34,19 @@ public:
 	ros::Publisher joint_state_pub;
 	ros::Publisher robot_pose_pub;
 	ros::ServiceServer control_mode_service;
+	ros::ServiceServer remember_pt_service;
+	ros::ServiceServer play_points_service;
+
+
 
 	Robot(ros::NodeHandle *nh);
 	~Robot();
 	void JointStatesPublisher();
 	void RobotPosePublisher();
 	bool SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+	bool RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+	bool StartPlayCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+
 	void UpdateTorque();
 
 	bool torque_mode_ready_flag;
@@ -66,6 +75,7 @@ private:
 
 	vector<double> _enc_cnts;
 	vector<int> _vel_dir;
+	deque<vector<double>> _play_points;
 
 	void FK(vector<double> &robot_pose, vector<double> &axis_deg);
 	Matrix4d GetTFMatrix(double axis_deg, int id);

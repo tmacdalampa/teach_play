@@ -282,8 +282,129 @@ void HwTmIntf::ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir)
 
 void HwTmIntf::MoveTorque(vector<double> torque_cmd)
 {
-    for (int i = 0; i < JNT_NUM; i++)
-    {   
-        cAxis[i].MoveTorque(torque_cmd[i], 10000, 100000, MC_ABORTING_MODE);
+    try
+    {
+        for (int i = 0; i < JNT_NUM; i++)
+        {   
+            cAxis[i].MoveTorque(torque_cmd[i], 10000, 100000, MC_ABORTING_MODE);
+        }
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+    }
+}
+
+
+void HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
+{
+    ELMO_INT16 iCnt;
+
+    //PVT init data
+    ELMO_ULINT32 ulMaxPoints;
+    ELMO_ULINT32 ulUnderflowThreshold ;
+    ELMO_UINT8 ucIsCyclic;
+    ELMO_UINT8 ucIsPosAbsolute;
+    ELMO_UINT16 usDimension;
+    MC_COORD_SYSTEM_ENUM eCoordSystem;
+    NC_MOTION_TABLE_TYPE_ENUM eTableMode;
+
+    //PVT appaend data
+    ELMO_ULINT32 ulNumberOfPoints;
+    ELMO_ULINT32 ulStartIndex;
+    ELMO_UINT8 ucIsAutoAppend;
+    ELMO_UINT8 ucIsTimeAbsolute;
+    NC_MOTION_TABLE_TYPE_ENUM eTableType = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
+
+    MC_PATH_REF handle;
+    
+    ELMO_DOUBLE dTable[NC_PVT_ECAM_MAX_ARRAY_SIZE]; 
+
+    int point_num = play_points.size();
+    
+
+    
+    for(int i = 0; i < point_num + 1; i++)
+    {
+
+        for(int j = 0; j<JNT_NUM; j++)
+        {
+            dTable[13*i + 2*(j+1)] = 0;
+            
+            if (i == 0)
+            {
+                vector<double> six_axis_pt = play_points.back();
+                dTable[13*i + 2*(j-1)] = six_axis_pt[j];
+            }
+            else
+            {
+                vector<double> six_axis_pt = play_points[i-1];
+                dTable[13*i + 2*(j-1)] = six_axis_pt[j];
+            }
+
+        }
+
+        if (i == 0)
+        {
+            dTable[i] = 0;
+        }
+        else
+        {
+            dTable[13*i] = 5; // pvt time interval
+        }
+    }
+    
+    try
+    {
+
+
+        //Init PVT memory table
+        ulMaxPoints= 13;
+        ulUnderflowThreshold =3 ;
+        ucIsCyclic = 0;
+        ucIsPosAbsolute =1;
+        usDimension =6;
+        eCoordSystem = MC_ACS_COORD;
+        eTableMode  = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
+
+        handle = cGrpRef.InitPVTTable(  ulMaxPoints,
+                                        ulUnderflowThreshold,
+                                        ucIsCyclic,
+                                        ucIsPosAbsolute,
+                                        usDimension,
+                                        eCoordSystem,
+                                        eTableMode);
+        std::cout << "InitPVTTable!!!" << std::endl;
+
+
+
+        //Append PVT memory table points
+        ulNumberOfPoints =point_num+1;
+        ulStartIndex =0;
+        ucIsAutoAppend =1;
+        ucIsTimeAbsolute =0;
+        eTableType = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
+        //cGrpRef.AppendPVTPoints(handle, dTable, ulNumberOfPoints,ulStartIndex,ucIsTimeAbsolute, eTableType); //manual
+        cGrpRef.AppendPVTPoints(handle, dTable, ulNumberOfPoints, ucIsTimeAbsolute, eTableType); //auto
+        std::cout << "AppendPVTPoints!!!" << std::endl;
+
+
+        //Move PVT table
+        cGrpRef.MovePVT(handle,eCoordSystem);
+        std::cout << "Move!!!" << std::endl;
+
+
+        //wait till motin ends
+        while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
+        //return 0;
+
+        cGrpRef.UnloadPVTTable(handle);
+        std::cout << "UnloadPVTTable" << std::endl;
+        while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
+
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
     }
 }

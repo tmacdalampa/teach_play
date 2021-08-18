@@ -36,6 +36,8 @@ Robot::Robot(ros::NodeHandle *nh)
    	robot_pose_pub = nh->advertise<geometry_msgs::Twist>("/robot_states", 10);
 
     control_mode_service = nh->advertiseService("/select_mode_service", &Robot::SelectModeCallback, this);
+    remember_pt_service = nh->advertiseService("/remember_pt_service", &Robot::RememberPtCallback, this);
+    play_points_service = nh->advertiseService("/start_play_service", &Robot::StartPlayCallback, this);
 
     torque_mode_ready_flag = false;
     for(int i = 0; i<JNT_NUM; i++)
@@ -109,6 +111,30 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
     return true;
 }
 
+bool Robot::RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+	res.message = "Get point";
+	res.success = true;
+	_play_points.push_back(_enc_cnts);
+    return true;
+}
+
+bool Robot::StartPlayCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+	res.message = "Start Play";
+	res.success = true;
+	if (_play_points.empty() != true)
+	{
+		ElmoMaster->PVTMotionMove(_play_points);
+		
+	}
+	else
+	{
+		res.message = "No Points:";
+		res.success = false;
+	}
+	return true;
+}
 
 Matrix4d Robot::GetTFMatrix(double axis_deg, int id)
 {

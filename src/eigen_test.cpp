@@ -3,7 +3,8 @@
 #include <eigen3/Eigen/Eigen>
 #include <eigen3/Eigen/Dense>
 #include <array>
-
+#include <vector>
+#include <deque>
 #include "teach_play/def.h"
 
 using namespace std;
@@ -135,9 +136,94 @@ int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "eigen_test");
   array<double, JNT_NUM> g_torque = {0,0,0,0,0,0};
-  array<double, JNT_NUM> axis_deg = {0,90,0,0,90,0};
-  GravityComp(g_torque, axis_deg);
-  //VelDir veldir = VelDir::NEGATIVE;
+  vector<double> axis_deg1 = {1, 2, 3, 4, 5, 6};
+  vector<double> axis_deg2 = {7, 8, 9, 10, 11, 12};
+  vector<double> axis_deg3 = {13, 14, 15, 16, 17, 18};
+  deque<vector<double>> play_points;
+  double dTable[52];
+  for(int i = 0; i<52; i++)
+  {
+    dTable[i] = 7;
+  }
+
+  play_points.push_back(axis_deg1);
+  play_points.push_back(axis_deg2);
+  play_points.push_back(axis_deg3);
+
+
+  for(int i = 0; i<4; i++)
+  {
+    if (i == 0)
+    {
+      dTable[13*i] = 0; //t0=0
+      
+      for(int j = 0; j<JNT_NUM; j++)
+      {
+        dTable[13*i + 2*(j+1)] = 0; //vel = 0
+        vector<double> six_axis_pt = play_points.back();
+        dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
+      }
+    }
+    else
+    {
+      dTable[13*i] = 5;
+      
+      for(int j = 0; j<JNT_NUM; j++)
+      {
+         //time interval = 0
+        dTable[13*i + 2*(j+1)] = 0; //vel = 0
+        vector<double> six_axis_pt = play_points[i-1];
+        dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
+      }
+      
+
+    }
+    #if 0
+    for(int j = 0; j<JNT_NUM; j++)
+    {
+      dTable[13*i + 2*(j+1)] = 0;
+          
+      if (i == 0)
+      {
+        vector<double> six_axis_pt = play_points.back();
+        dTable[13*i + 2*(j-1)] = six_axis_pt[j];
+      }
+      else
+      {
+        vector<double> six_axis_pt = play_points[i-1];
+        dTable[13*i + 2*(j-1)] = six_axis_pt[j];
+      }
+
+    }
+
+    if (i == 0)
+    {
+      dTable[i] = 0;
+    }
+    else
+    {
+      dTable[13*i] = 5; // pvt time interval
+    }
+    #endif
+  }
+
+for(int i = 0; i<4; i++)
+{
+  cout << dTable[13*i] << " , "
+       << dTable[13*i+1] << " , "
+       << dTable[13*i+2] << " , "
+       << dTable[13*i+3] << " , "
+       << dTable[13*i+4] << " , "
+       << dTable[13*i+5] << " , "
+       << dTable[13*i+6] << " , "
+       << dTable[13*i+7] << " , "
+       << dTable[13*i+8] << " , "
+       << dTable[13*i+9] << " , "
+       << dTable[13*i+10] << " , "
+       << dTable[13*i+11] << " , "
+       << dTable[13*i+12] << " , " << endl;
+}
+
   
   
 }
