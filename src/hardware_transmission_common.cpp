@@ -55,7 +55,7 @@ void HwTmIntf::InitConnection()
 {
     
     ELMO_INT32 iEventMask = 0x7FFFFFFF;
-    const ELMO_PINT8 cHostIP= (char*)"192.168.1.7";
+    const ELMO_PINT8 cHostIP= (char*)"192.168.1.5";
     const ELMO_PINT8 cDestIP= (char*)"192.168.1.3";
     
     //cout << "A" << endl;
@@ -321,43 +321,56 @@ void HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
     ELMO_DOUBLE dTable[NC_PVT_ECAM_MAX_ARRAY_SIZE]; 
 
     int point_num = play_points.size();
-    
-
-    
-    for(int i = 0; i < point_num + 1; i++)
+        
+    for(int i = 0; i < point_num +1; i++)
     {
-
-        for(int j = 0; j<JNT_NUM; j++)
-        {
-            dTable[13*i + 2*(j+1)] = 0;
-            
-            if (i == 0)
-            {
-                vector<double> six_axis_pt = play_points.back();
-                dTable[13*i + 2*(j-1)] = six_axis_pt[j];
-            }
-            else
-            {
-                vector<double> six_axis_pt = play_points[i-1];
-                dTable[13*i + 2*(j-1)] = six_axis_pt[j];
-            }
-
-        }
-
         if (i == 0)
         {
-            dTable[i] = 0;
+            dTable[13*i] = 0; //t0=0
+      
+            for(int j = 0; j<JNT_NUM; j++)
+            {
+                dTable[13*i + 2*(j+1)] = 0; //vel = 0
+                vector<double> six_axis_pt = play_points.back();
+                dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
+            }
         }
         else
         {
-            dTable[13*i] = 5; // pvt time interval
+            dTable[13*i] = 5;
+      
+            for(int j = 0; j<JNT_NUM; j++)
+            {
+                //time interval = 0
+                dTable[13*i + 2*(j+1)] = 0; //vel = 0
+                vector<double> six_axis_pt = play_points[i-1];
+                dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
+            }
         }
     }
     
+    for(int i = 0; i<point_num + 1; i++)
+    {
+        cout << dTable[13*i] << " , "
+       << dTable[13*i+1] << " , "
+       << dTable[13*i+2] << " , "
+       << dTable[13*i+3] << " , "
+       << dTable[13*i+4] << " , "
+       << dTable[13*i+5] << " , "
+       << dTable[13*i+6] << " , "
+       << dTable[13*i+7] << " , "
+       << dTable[13*i+8] << " , "
+       << dTable[13*i+9] << " , "
+       << dTable[13*i+10] << " , "
+       << dTable[13*i+11] << " , "
+       << dTable[13*i+12] << " , " << endl;
+    }
+
+
     try
     {
 
-
+        #if 1
         //Init PVT memory table
         ulMaxPoints= 13;
         ulUnderflowThreshold =3 ;
@@ -401,6 +414,7 @@ void HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
         cGrpRef.UnloadPVTTable(handle);
         std::cout << "UnloadPVTTable" << std::endl;
         while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
+        #endif
 
     }
     catch(CMMCException exp)

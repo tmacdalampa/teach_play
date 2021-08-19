@@ -113,9 +113,17 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 
 bool Robot::RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
+	cout << _enc_cnts[0] << ", "
+		 <<	_enc_cnts[1] << ", "
+		 <<	_enc_cnts[2] << ", "
+		 <<	_enc_cnts[3] << ", "
+		 <<	_enc_cnts[4] << ", "
+		 <<	_enc_cnts[5] << endl;
+
+
+	_play_points.push_back(_enc_cnts);
 	res.message = "Get point";
 	res.success = true;
-	_play_points.push_back(_enc_cnts);
     return true;
 }
 
