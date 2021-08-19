@@ -87,7 +87,7 @@ bool HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
     {
         if (eMode_now != OPM402_CYCLIC_SYNC_TORQUE_MODE)
         {
-            if (DisableGroup() != true); return false;
+            if (DisableGroup() != true) return false; 
             if (ChangeOpMode(op_mode, torque_mode_ready_flag) != true) return false;
         }
         
@@ -180,9 +180,11 @@ bool HwTmIntf::DisableGroup()
         cGrpRef.GroupDisable();
         while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
         return true;
+        cout << "disable group success" << endl;
     }
     catch(CMMCException exp)
     {
+        cout << "disable group failed" << endl;
         Exception(exp);
         return false;
     }
@@ -248,11 +250,12 @@ bool HwTmIntf::ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag)
                 torque_mode_ready_flag = true;
             }
         }
-        cout << "ChangeOpMode Done" << endl;
+        cout << "ChangeOpMode success" << endl;
         return true;
     }
     catch(CMMCException exp)
     {
+        cout << "ChangeOpMode failed" << endl;
         Exception(exp);
         return false;
     }
@@ -304,6 +307,7 @@ bool HwTmIntf::ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir)
                 vel_dir[i] = VelDir::STANDSTILL;
             }    
         }
+        return true;
     }
     catch(CMMCException exp)
     {

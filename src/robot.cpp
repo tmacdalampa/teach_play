@@ -64,9 +64,9 @@ Robot::~Robot()
 
 void Robot::JointStatesPublisher()
 {
-	bool res =ElmoMaster->ReadENC(_enc_cnts, _vel_dir);
+	bool res = ElmoMaster->ReadENC(_enc_cnts, _vel_dir);
 	if (res != true)
-	{
+	{	
 		return;
 	}
 	for (int i = 0; i < JNT_NUM; i++)
@@ -102,11 +102,11 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 	bool select_mode_result = ElmoMaster->SelectModeProcess(req.data, torque_mode_ready_flag); //0(false for position mode) 1(true for torque mode)
 	if (req.data == true)
 	{
-		res.message = "torque mode done";
+		res.message = "change to torque mode";
 	}
 	else
 	{
-		res.message = "position mode done";
+		res.message = "change to position mode";
 	}
 	if (select_mode_result == true)
 	{
