@@ -1,0 +1,4 @@
+bool type
+float32 vel
+---
+bool success

@@ -7,6 +7,7 @@
 #include <geometry_msgs/Twist.h>
 
 #include "teach_play/hardware_transmission_interface.h"
+#include "teach_play/MotionPlanning.h"
 
 #include <array>
 #include <eigen3/Eigen/Eigen>
