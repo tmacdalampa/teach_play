@@ -34,20 +34,18 @@ void Exception(CMMCException exp)
 HwTmIntf::HwTmIntf()
 {    
     InitConnection();
-    //ResetAll(false);
-    //ChangeOpMode(false); //default position mode
-    //EnableAll(false);
-
+    ResetAll(true);
 }
 
 HwTmIntf::~HwTmIntf()
 {
+    DisableAll();
     OPM402 eMode_now = cAxis[5].GetOpMode();
     if (eMode_now == OPM402_CYCLIC_SYNC_POSITION_MODE)
     {
         DisableGroup();
     }
-    DisableAll();
+    
 
 }
 
@@ -58,20 +56,15 @@ void HwTmIntf::InitConnection()
     const ELMO_PINT8 cHostIP= (char*)"192.168.1.5";
     const ELMO_PINT8 cDestIP= (char*)"192.168.1.3";
     
-    //cout << "A" << endl;
-    // Set Try-Catch flag Enable\Disable
     CMMCPPGlobal::Instance()->SetThrowFlag(true,false);
     CMMCPPGlobal::Instance()->SetThrowWarningFlag(false);
-    //cout << "B" << endl;
-    //create connection
+
     gConnHndl = gConn.ConnectRPCEx(cHostIP, cDestIP, iEventMask, (MMC_MB_CLBK)NULL);
     gConn.GetVersion();
-    //cout << "C" << endl;
-    // Register Run Time Error Callback function
+
     pRTEClbk = (RTE_CLBKP)OnRunTimeError;
     CMMCPPGlobal::Instance()->RegisterRTE(pRTEClbk);
-    //cout << "D" << endl;
-    // Axes initialization
+
     
   	cAxis[0].InitAxisData("a01", gConnHndl);
     cAxis[1].InitAxisData("a02", gConnHndl);
@@ -79,7 +72,7 @@ void HwTmIntf::InitConnection()
     cAxis[3].InitAxisData("a04", gConnHndl);
   	cAxis[4].InitAxisData("a05", gConnHndl);
   	cAxis[5].InitAxisData("a06", gConnHndl);   
-    cGrpRef.InitAxisData("v01",gConnHndl); //add this line and GG
+    cGrpRef.InitAxisData("v01",gConnHndl);
     
 }
 
@@ -90,10 +83,7 @@ void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
     {
         if (eMode_now != OPM402_CYCLIC_SYNC_TORQUE_MODE)
         {
-            //cout << "hello" << endl;
             DisableGroup();
-            //DisableAll(op_mode);
-            //ResetAll(op_mode);
             ChangeOpMode(op_mode, torque_mode_ready_flag);
         }
         EnableAll(op_mode);
@@ -107,8 +97,6 @@ void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
     {
         if (eMode_now != OPM402_CYCLIC_SYNC_POSITION_MODE)
         {
-            //DisableAll(op_mode);
-            //ResetAll(op_mode);
             ChangeOpMode(op_mode, torque_mode_ready_flag);
         }
         EnableAll(op_mode);
@@ -157,7 +145,7 @@ void HwTmIntf::DisableAll()
         {
             if (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
             {
-                cAxis[id].Stop();
+                cAxis[id].Stop(); //if it is still moving, start first
                 while (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
             }
 		    if (!(cAxis[id].ReadStatus()& NC_AXIS_DISABLED_MASK))
@@ -166,9 +154,6 @@ void HwTmIntf::DisableAll()
                 while (!(cAxis[id].ReadStatus()& NC_AXIS_DISABLED_MASK));
             }
         }
-        
-
-
         cout << "disable done" << endl;
 
     }

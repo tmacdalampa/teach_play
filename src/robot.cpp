@@ -120,7 +120,6 @@ bool Robot::RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigge
 		 <<	_enc_cnts[4] << ", "
 		 <<	_enc_cnts[5] << endl;
 
-
 	_play_points.push_back(_enc_cnts);
 	res.message = "Get point";
 	res.success = true;
@@ -129,12 +128,12 @@ bool Robot::RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigge
 
 bool Robot::StartPlayCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
-	res.message = "Start Play";
-	res.success = true;
 	if (_play_points.empty() != true)
 	{
 		ElmoMaster->PVTMotionMove(_play_points);
 		
+		res.message = "Start Play";
+		res.success = true;		
 	}
 	else
 	{
