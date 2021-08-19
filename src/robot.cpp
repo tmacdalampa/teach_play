@@ -64,8 +64,11 @@ Robot::~Robot()
 
 void Robot::JointStatesPublisher()
 {
-	ElmoMaster->ReadENC(_enc_cnts, _vel_dir);
-	
+	bool res =ElmoMaster->ReadENC(_enc_cnts, _vel_dir);
+	if (res != true)
+	{
+		return;
+	}
 	for (int i = 0; i < JNT_NUM; i++)
     {
     	_axis_deg[i] = (((_enc_cnts[i]- _zero_points[i])/_gear_ratios[i]) *DEG_PER_REV) /_enc_resolution;
@@ -95,8 +98,8 @@ void Robot::RobotPosePublisher()
 
 
 bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
-{
-	ElmoMaster->SelectModeProcess(req.data, torque_mode_ready_flag); //0(false for position mode) 1(true for torque mode)
+{	
+	bool select_mode_result = ElmoMaster->SelectModeProcess(req.data, torque_mode_ready_flag); //0(false for position mode) 1(true for torque mode)
 	if (req.data == true)
 	{
 		res.message = "torque mode done";
@@ -105,9 +108,14 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 	{
 		res.message = "position mode done";
 	}
-	res.success = true;
-
-	//cout << res.message << endl;
+	if (select_mode_result == true)
+	{
+		res.success = true;
+	}
+	else
+	{
+		res.success = false;
+	}
     return true;
 }
 
@@ -128,17 +136,31 @@ bool Robot::RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigge
 
 bool Robot::StartPlayCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
-	if (_play_points.empty() != true)
+	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
 	{
-		ElmoMaster->PVTMotionMove(_play_points);
-		
-		res.message = "Start Play";
-		res.success = true;		
+		res.success = false;
+		res.message = "DriverMode InCorrect";
 	}
 	else
-	{
-		res.message = "No Points:";
-		res.success = false;
+	{	
+		if (_play_points.empty() != true)
+		{
+			if (ElmoMaster->PVTMotionMove(_play_points) != true)
+			{
+				res.message = "Motion Failed";
+				res.success = false;
+			}
+			else
+			{
+				res.message = "Start Play";
+				res.success = true;
+			}		
+		}
+		else
+		{
+			res.message = "No Points:";
+			res.success = false;
+		}
 	}
 	return true;
 }

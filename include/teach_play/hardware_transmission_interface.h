@@ -27,18 +27,19 @@ class HwTmIntf
     ~HwTmIntf();
 
     void InitConnection();
-    void EnableAll(bool op_mode);
-    void DisableAll();
-    void DisableGroup();
-    void ResetAll(bool op_mode);
-    void ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag);
-    void SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
-    void ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
-    void MoveTorque(vector<double> torque_cmd);
-    void PVTMotionMove(deque<vector<double>> &play_points);
+    bool EnableAll(bool op_mode);
+    bool DisableAll();
+    bool DisableGroup();
+    bool ResetAll(bool op_mode);
+    bool ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag);
+    bool SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
+    bool ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
+    bool MoveTorque(vector<double> torque_cmd);
+    bool PVTMotionMove(deque<vector<double>> &play_points);
+    DriverMode GetDriverMode();
 
   private:
-        
+    bool _res;
     //variable related with ELMO ethercat master
     MMC_CONNECT_HNDL gConnHndl ;
     CMMCConnection gConn ;
@@ -48,6 +49,7 @@ class HwTmIntf
     MMC_MOTIONPARAMS_SINGLE stSingleDefault ;
     RTE_CLBKP pRTEClbk;
     OPM402 eMode;
+
 
 };
 

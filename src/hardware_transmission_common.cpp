@@ -34,16 +34,20 @@ void Exception(CMMCException exp)
 HwTmIntf::HwTmIntf()
 {    
     InitConnection();
-    ResetAll(true);
+    if (ResetAll(true) != true)
+    {
+        exit(0);
+    }
 }
 
 HwTmIntf::~HwTmIntf()
 {
-    DisableAll();
+    _res = DisableAll();
+
     OPM402 eMode_now = cAxis[5].GetOpMode();
     if (eMode_now == OPM402_CYCLIC_SYNC_POSITION_MODE)
     {
-        DisableGroup();
+        _res = DisableGroup();
     }
     
 
@@ -76,17 +80,18 @@ void HwTmIntf::InitConnection()
     
 }
 
-void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
+bool HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
 {
     OPM402 eMode_now = cAxis[5].GetOpMode();
     if (op_mode == true)
     {
         if (eMode_now != OPM402_CYCLIC_SYNC_TORQUE_MODE)
         {
-            DisableGroup();
-            ChangeOpMode(op_mode, torque_mode_ready_flag);
+            if (DisableGroup() != true); return false;
+            if (ChangeOpMode(op_mode, torque_mode_ready_flag) != true) return false;
         }
-        EnableAll(op_mode);
+        
+        if ( EnableAll(op_mode)!= true) return false;
         
         if (cAxis[5].GetOpMode() == OPM402_CYCLIC_SYNC_TORQUE_MODE)
         {
@@ -97,26 +102,26 @@ void HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
     {
         if (eMode_now != OPM402_CYCLIC_SYNC_POSITION_MODE)
         {
-            ChangeOpMode(op_mode, torque_mode_ready_flag);
+            if (ChangeOpMode(op_mode, torque_mode_ready_flag) != true) return false;
         }
-        EnableAll(op_mode);
+        if (EnableAll(op_mode) != true) return false;
     }
 
-
+    return true;
 }
 
-void HwTmIntf::EnableAll(bool op_mode)
+bool HwTmIntf::EnableAll(bool op_mode)
 {
     try
     { 
-        for(int id = 0; id < JNT_NUM; id++)
+        for(int i = 0; i < JNT_NUM; i++)
         {
             //ROS_INFO("axis %d status is %d (STAND_STILL) and %d (DISCRETE_MOTION)", id, (cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK), (cAxis[id].ReadStatus()& NC_AXIS_DISCRETE_MOTION_MASK));
 	    
-            if (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
+            if (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
             {
-                cAxis[id].PowerOn();
-                while (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
+                cAxis[i].PowerOn();
+                while (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
             }
             //ROS_INFO("axis %d status is %d (STAND_STILL) and %d (DISCRETE_MOTION)", id, (cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK), (cAxis[id].ReadStatus()& NC_AXIS_DISCRETE_MOTION_MASK));
         }
@@ -128,65 +133,71 @@ void HwTmIntf::EnableAll(bool op_mode)
             cGrpRef.GroupEnable();
             while (!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
         }
+        return true;
 
     }
     catch(CMMCException exp)
     {
         Exception(exp);
         cout << "enable failed" <<endl;
+        return false;
     }
 }
 
-void HwTmIntf::DisableAll()
+bool HwTmIntf::DisableAll()
 {
     try
     {
-        for(int id = 0; id < JNT_NUM; id++)
+        for(int i = 0; i < JNT_NUM; i++)
         {
-            if (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
+            if (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
             {
-                cAxis[id].Stop(); //if it is still moving, start first
-                while (!(cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
+                cAxis[i].Stop(); //if it is still moving, start first
+                while (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
             }
-		    if (!(cAxis[id].ReadStatus()& NC_AXIS_DISABLED_MASK))
+		    if (!(cAxis[i].ReadStatus()& NC_AXIS_DISABLED_MASK))
             {
-                cAxis[id].PowerOff();
-                while (!(cAxis[id].ReadStatus()& NC_AXIS_DISABLED_MASK));
+                cAxis[i].PowerOff();
+                while (!(cAxis[i].ReadStatus()& NC_AXIS_DISABLED_MASK));
             }
         }
         cout << "disable done" << endl;
+        return true;
 
     }
 	catch(CMMCException exp)
   	{
         Exception(exp);
+        return false;
  	}
 
 }
 
-void HwTmIntf::DisableGroup()
+bool HwTmIntf::DisableGroup()
 {
     try
     {   
         cGrpRef.GroupDisable();
         while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
+        return true;
     }
     catch(CMMCException exp)
     {
         Exception(exp);
+        return false;
     }
 }
 
-void HwTmIntf::ResetAll(bool op_mode)
+bool HwTmIntf::ResetAll(bool op_mode)
 {
 	try
     {
-        for(int id = 0; id < JNT_NUM; id++)
+        for(int i = 0; i < JNT_NUM; i++)
         {
-            if (cAxis[id].ReadStatus() & NC_AXIS_ERROR_STOP_MASK)
+            if (cAxis[i].ReadStatus() & NC_AXIS_ERROR_STOP_MASK)
             {
-                cAxis[id].Reset();
-                while( !(cAxis[id].ReadStatus() & NC_AXIS_DISABLED_MASK));
+                cAxis[i].Reset();
+                while( !(cAxis[i].ReadStatus() & NC_AXIS_DISABLED_MASK));
             }
         }
         if(op_mode == false)
@@ -199,16 +210,18 @@ void HwTmIntf::ResetAll(bool op_mode)
         }
         //ROS_INFO("ResetAll Done");
         std::cout << "reset all done" <<std::endl;
+        return true;
     }
 
     
     catch(CMMCException exp)
     {
         Exception(exp);
+        return false;
     }
 }
 
-void HwTmIntf::ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag)
+bool HwTmIntf::ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag)
 {
     try
     {
@@ -222,50 +235,85 @@ void HwTmIntf::ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag)
             torque_mode_ready_flag = false;
         }
 
-        for(int id = 0; id < JNT_NUM; id++)
+        for(int i = 0; i < JNT_NUM; i++)
         {            
-            if (cAxis[id].GetOpMode() != eMode)
+            if (cAxis[i].GetOpMode() != eMode)
             {
-                cAxis[id].SetOpMode(eMode);
-                while( cAxis[id].GetOpMode() != eMode);
+                cAxis[i].SetOpMode(eMode);
+                while( cAxis[i].GetOpMode() != eMode);
                 
             }
-            if (cAxis[id].GetOpMode() == OPM402_CYCLIC_SYNC_TORQUE_MODE)
+            if (cAxis[i].GetOpMode() == OPM402_CYCLIC_SYNC_TORQUE_MODE)
             {
                 torque_mode_ready_flag = true;
             }
         }
         cout << "ChangeOpMode Done" << endl;
+        return true;
     }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+        return false;
+    }
+}
+
+DriverMode HwTmIntf::GetDriverMode()
+{
+    try
+    {
+        OPM402 eMode_now;
+        for(int i = 0; i < JNT_NUM; i++)
+        {    
+            eMode_now =  cAxis[i].GetOpMode();
+        }
+        if (eMode_now == OPM402_CYCLIC_SYNC_TORQUE_MODE)
+        {
+            return DriverMode::CST;
+        }
+        else
+        {
+            return DriverMode::CSP;
+        }
+    }
+
     catch(CMMCException exp)
     {
         Exception(exp);
     }
 }
 
-void HwTmIntf::ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir)
+bool HwTmIntf::ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir)
 {
-    for (int i = 0; i < JNT_NUM; i++)
+    try
     {
-        enc_cnts[i] = cAxis[i].GetActualPosition();
+        for (int i = 0; i < JNT_NUM; i++)
+        {
+            enc_cnts[i] = cAxis[i].GetActualPosition();
         
-        if(cAxis[i].GetActualVelocity() > 1000)
-        {   
-            vel_dir[i] = VelDir::POSITIVE;
+            if(cAxis[i].GetActualVelocity() > 1000)
+            {   
+                vel_dir[i] = VelDir::POSITIVE;
+            }
+            else if(cAxis[i].GetActualVelocity() < -1000)
+            {
+                vel_dir[i] = VelDir::NEGATIVE;
+            }
+            else
+            {
+                vel_dir[i] = VelDir::STANDSTILL;
+            }    
         }
-        else if(cAxis[i].GetActualVelocity() < -1000)
-        {
-            vel_dir[i] = VelDir::NEGATIVE;
-        }
-        else
-        {
-            vel_dir[i] = VelDir::STANDSTILL;
-        }    
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+        return false;
     }
 }
 
 
-void HwTmIntf::MoveTorque(vector<double> torque_cmd)
+bool HwTmIntf::MoveTorque(vector<double> torque_cmd)
 {
     try
     {
@@ -273,15 +321,17 @@ void HwTmIntf::MoveTorque(vector<double> torque_cmd)
         {   
             cAxis[i].MoveTorque(torque_cmd[i], 10000, 100000, MC_ABORTING_MODE);
         }
+        return true;
     }
     catch(CMMCException exp)
     {
         Exception(exp);
+        return false;
     }
 }
 
 
-void HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
+bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
 {
     ELMO_INT16 iCnt;
 
@@ -382,7 +432,6 @@ void HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
         ucIsAutoAppend =1;
         ucIsTimeAbsolute =0;
         eTableType = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
-        //cGrpRef.AppendPVTPoints(handle, dTable, ulNumberOfPoints,ulStartIndex,ucIsTimeAbsolute, eTableType); //manual
         cGrpRef.AppendPVTPoints(handle, dTable, ulNumberOfPoints, ucIsTimeAbsolute, eTableType); //auto
         std::cout << "AppendPVTPoints!!!" << std::endl;
 
@@ -400,10 +449,12 @@ void HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
         std::cout << "UnloadPVTTable" << std::endl;
         while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
         #endif
+        return true;
 
     }
     catch(CMMCException exp)
     {
         Exception(exp);
+        return false;
     }
 }
