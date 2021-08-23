@@ -16,18 +16,22 @@ class SelectMode(smach.State):
 	def execute(self, userdata):
 		
 		mode = raw_input("please input 'teach' or 'play':")
+		req = SetBoolRequest()
 		if mode == 'teach':
 			req.data = True
+			print(mode)
 		elif mode == 'play':
 			req.data = False
 		else:
 			return 'error'
 
-		res = self.triggerSelectMode_service(SetBoolRequest())
+		res = self.triggerSelectMode_service(req)
 		
 		if req.data == True and res.success == True:
+			
 			return 'teach'
 		elif req.data == False and res.success == True:
+			#print(res)
 			return 'play'
 		else:
 		  return 'failed'
@@ -65,9 +69,13 @@ class StartMotion(smach.State):
 		
 		while(vel <= 0 or vel > 100):
 			vel = input("please input maximum velocity percentage again:")
-		
-		res = self.triggerStartMotion_service(MotionPlanningRequest())
-		if res == True:
+		req = MotionPlanningRequest()
+		req.vel = vel
+
+		res = self.triggerStartMotion_service(req)
+		print(res)
+
+		if res.success == True:
 			return 'succeed'
 		else:
 			return 'failed'
@@ -79,7 +87,7 @@ def main():
 
 	sm = smach.StateMachine(outcomes=['aborted'])
 
-	sis = smach_ros.IntrospectionServer('my_smach_introspection_server', sm, '/IRA_arm')
+	sis = smach_ros.IntrospectionServer('my_smach_introspection_server', sm, '/SM_ROOT')
 
 
 
@@ -97,7 +105,7 @@ def main():
 		
 		smach.StateMachine.add('StartMotion', StartMotion(),
 								transitions={'succeed':'SelectMode',
-														'failed':'aborted'})
+														'failed':'SelectMode'})
 
 
 		

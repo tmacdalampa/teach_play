@@ -382,14 +382,15 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
             {
                 dTable[13*i + 2*(j+1)] = 0; //vel = 0    
                 dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-                path_each_joint.push_back(dTable[13*i + 2*(j+1)-1] - dTable[13*(i-1) + 2*(j+1)-1]);
+                path_each_joint.push_back(abs(dTable[13*i + 2*(j+1)-1] - dTable[13*(i-1) + 2*(j+1)-1]));
             }
             double max_path = *max_element(path_each_joint.begin(), path_each_joint.end());
 
             dTable[13*i] = max_path/max_vel;
+            cout << "this path time interval = " << max_path/max_vel << endl;
         }
     }
-    
+    #if 0
     for(int i = 0; i<point_num + 1; i++)
     {
         cout << dTable[13*i] << " , "
@@ -406,7 +407,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
        << dTable[13*i+11] << " , "
        << dTable[13*i+12] << " , " << endl;
     }
-
+    #endif
 
     try
     {
