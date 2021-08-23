@@ -32,6 +32,9 @@ Robot::Robot(ros::NodeHandle *nh)
     if( !nh->getParam("/motor_friction_current", _motor_friction_current))
     	ROS_ERROR("Failed to get parameter from server.");
 
+    if( !nh->getParam("/max_velocity", _max_velocity))
+    	ROS_ERROR("Failed to get parameter from server.");
+
     joint_state_pub = nh->advertise<sensor_msgs::JointState>("/joint_states", 10);
    	robot_pose_pub = nh->advertise<geometry_msgs::Twist>("/robot_states", 10);
 
@@ -134,7 +137,7 @@ bool Robot::RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigge
     return true;
 }
 
-bool Robot::StartPlayCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool Robot::StartPlayCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res)
 {
 	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
 	{
@@ -145,7 +148,9 @@ bool Robot::StartPlayCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger
 	{	
 		if (_play_points.empty() != true)
 		{
-			if (ElmoMaster->PVTMotionMove(_play_points) != true)
+			double vel = _max_velocity*0.01*req.vel;
+
+			if (ElmoMaster->PVTMotionMove(_play_points, vel) != true)
 			{
 				res.message = "Motion Failed";
 				res.success = false;

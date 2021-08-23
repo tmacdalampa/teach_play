@@ -13,6 +13,8 @@
 #include <array>
 #include <time.h>
 #include <deque>
+#include <utility>
+
 //include for elmo
 #include "MMCPP/OS_PlatformDependSetting.hpp"
 #include "MMCPP/MMCPPlib.hpp"
@@ -35,7 +37,7 @@ class HwTmIntf
     bool SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
     bool ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
     bool MoveTorque(vector<double> torque_cmd);
-    bool PVTMotionMove(deque<vector<double>> &play_points);
+    bool PVTMotionMove(deque<vector<double>> &play_points, double &max_vel);
     DriverMode GetDriverMode();
 
   private:

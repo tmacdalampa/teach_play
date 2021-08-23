@@ -5,9 +5,10 @@
 #include <std_srvs/Trigger.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
+#include <teach_play/MotionPlanning.h>
 
 #include "teach_play/hardware_transmission_interface.h"
-#include "teach_play/MotionPlanning.h"
+
 
 #include <array>
 #include <eigen3/Eigen/Eigen>
@@ -46,7 +47,7 @@ public:
 	void RobotPosePublisher();
 	bool SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 	bool RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-	bool StartPlayCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+	bool StartPlayCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
 
 	void UpdateTorque();
 
@@ -65,7 +66,8 @@ private:
 	vector<double> _M; //unit kg
 	vector<double> _motor_torque_const; //unit Nm/Arms
 	vector<double> _motor_friction_current; //unit mAmp
-	int _enc_resolution;
+	int _enc_resolution; //encoder counts per rev
+	int _max_velocity; //maximum velocity of joint vel, cnts/sec
 
 
 	Matrix4d _T01, _T12, _T23, _T34, _T45, _T56 , _T06;

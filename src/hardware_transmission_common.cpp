@@ -335,7 +335,7 @@ bool HwTmIntf::MoveTorque(vector<double> torque_cmd)
 }
 
 
-bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
+bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel)
 {
     ELMO_INT16 iCnt;
 
@@ -376,15 +376,17 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points)
         }
         else
         {
-            dTable[13*i] = 5;
-      
+            vector<double> path_each_joint;
+            vector<double> six_axis_pt = play_points[i-1];      
             for(int j = 0; j<JNT_NUM; j++)
             {
-                //time interval = 0
-                dTable[13*i + 2*(j+1)] = 0; //vel = 0
-                vector<double> six_axis_pt = play_points[i-1];
+                dTable[13*i + 2*(j+1)] = 0; //vel = 0    
                 dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
+                path_each_joint.push_back(dTable[13*i + 2*(j+1)-1] - dTable[13*(i-1) + 2*(j+1)-1]);
             }
+            double max_path = *max_element(path_each_joint.begin(), path_each_joint.end());
+
+            dTable[13*i] = max_path/max_vel;
         }
     }
     

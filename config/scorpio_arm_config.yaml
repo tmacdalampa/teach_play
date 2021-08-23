@@ -55,3 +55,4 @@ motor_friction_current:
   - 900
   - 1000
   - 600
+max_velocity: 10000000
