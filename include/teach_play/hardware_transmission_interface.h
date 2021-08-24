@@ -14,6 +14,8 @@
 #include <time.h>
 #include <deque>
 #include <utility>
+#include <eigen3/Eigen/Eigen>
+#include <eigen3/Eigen/Dense>
 
 //include for elmo
 #include "MMCPP/OS_PlatformDependSetting.hpp"
@@ -37,10 +39,12 @@ class HwTmIntf
     bool SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
     bool ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
     bool MoveTorque(vector<double> torque_cmd);
-    bool PVTMotionMove(deque<vector<double>> &play_points, double &max_vel);
+    bool PVTMotionMove(deque<vector<double>> &play_points, double &max_vel, MotionType &types);
     DriverMode GetDriverMode();
 
   private:
+    int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);
+    int MotionPlanningBlending(deque<vector<double>> &play_points, double &max_vel);
     bool _res;
     //variable related with ELMO ethercat master
     MMC_CONNECT_HNDL gConnHndl ;
@@ -51,6 +55,7 @@ class HwTmIntf
     MMC_MOTIONPARAMS_SINGLE stSingleDefault ;
     RTE_CLBKP pRTEClbk;
     OPM402 eMode;
+    ELMO_DOUBLE dTable[NC_PVT_ECAM_MAX_ARRAY_SIZE];
 
 
 };

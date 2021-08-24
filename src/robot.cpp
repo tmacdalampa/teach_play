@@ -149,8 +149,20 @@ bool Robot::StartPlayCallback(teach_play::MotionPlanning::Request &req, teach_pl
 		if (_play_points.empty() != true)
 		{
 			double vel = _max_velocity*0.01*req.vel;
+			MotionType type;
 
-			if (ElmoMaster->PVTMotionMove(_play_points, vel) != true)
+			switch(req.type)
+    		{ 
+        		case 0:
+        			type = PVT_NON_BLENDING;       
+            		break;
+        		case 1:
+        			type = PVT_BLENDING;
+            		break;
+    		}
+
+
+			if (ElmoMaster->PVTMotionMove(_play_points, vel, type) != true)
 			{
 				res.message = "Motion Failed";
 				res.success = false;

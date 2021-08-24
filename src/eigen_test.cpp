@@ -136,78 +136,56 @@ int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "eigen_test");
   array<double, JNT_NUM> g_torque = {0,0,0,0,0,0};
-  vector<double> axis_deg1 = {1, 2, 3, 4, 5, 6};
-  vector<double> axis_deg2 = {7, 8, 9, 10, 11, 12};
-  vector<double> axis_deg3 = {13, 14, 15, 16, 17, 18};
+  vector<double> axis_deg1 = {0, 0, 0, 0, 0, 0};
+  vector<double> axis_deg2 = {1000, 1000, 1000, 1000, 1000, 1000};
+  vector<double> axis_deg3 = {2500, 2500, 2500, 2500, 2500, 2500};
+  vector<double> axis_deg4 = {3000, 3000, 3000, 3000, 3000, 3000};
+  vector<double> axis_deg5 = {5000, 5000, 5000, 5000, 5000, 5000};
+  int max_vel = 1000;
+
   deque<vector<double>> play_points;
-  double dTable[52];
-  for(int i = 0; i<52; i++)
-  {
-    dTable[i] = 7;
-  }
+  double dTable[170];
 
   play_points.push_back(axis_deg1);
   play_points.push_back(axis_deg2);
   play_points.push_back(axis_deg3);
+  play_points.push_back(axis_deg4);
+  play_points.push_back(axis_deg5);
+  int point_num = play_points.size();
 
 
-  for(int i = 0; i<4; i++)
-  {
-    if (i == 0)
+  for(int i = 0; i < point_num +1; i++)
     {
-      dTable[13*i] = 0; //t0=0
+        if (i == 0)
+        {
+            dTable[13*i] = 0; //t0=0
       
-      for(int j = 0; j<JNT_NUM; j++)
-      {
-        dTable[13*i + 2*(j+1)] = 0; //vel = 0
-        vector<double> six_axis_pt = play_points.back();
-        dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-      }
-    }
-    else
-    {
-      dTable[13*i] = 5;
-      
-      for(int j = 0; j<JNT_NUM; j++)
-      {
-         //time interval = 0
-        dTable[13*i + 2*(j+1)] = 0; //vel = 0
-        vector<double> six_axis_pt = play_points[i-1];
-        dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-      }
-      
+            for(int j = 0; j<JNT_NUM; j++)
+            {
+                dTable[13*i + 2*(j+1)] = 0; //vel = 0
+                vector<double> six_axis_pt = play_points.back();
+                dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
+            }
+        }
+        else
+        {
+            vector<double> path_each_joint;
+            vector<double> six_axis_pt = play_points[i-1];      
+            for(int j = 0; j<JNT_NUM; j++)
+            {
+                dTable[13*i + 2*(j+1)] = 0; //vel = 0    
+                dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
+                path_each_joint.push_back(abs(dTable[13*i + 2*(j+1)-1] - dTable[13*(i-1) + 2*(j+1)-1]));
+            }
+            double max_path = *max_element(path_each_joint.begin(), path_each_joint.end());
 
+            dTable[13*i] = max_path/max_vel;
+            //cout << "this path time interval = " << max_path/max_vel << endl;
+        }
     }
+
     #if 0
-    for(int j = 0; j<JNT_NUM; j++)
-    {
-      dTable[13*i + 2*(j+1)] = 0;
-          
-      if (i == 0)
-      {
-        vector<double> six_axis_pt = play_points.back();
-        dTable[13*i + 2*(j-1)] = six_axis_pt[j];
-      }
-      else
-      {
-        vector<double> six_axis_pt = play_points[i-1];
-        dTable[13*i + 2*(j-1)] = six_axis_pt[j];
-      }
-
-    }
-
-    if (i == 0)
-    {
-      dTable[i] = 0;
-    }
-    else
-    {
-      dTable[13*i] = 5; // pvt time interval
-    }
-    #endif
-  }
-
-for(int i = 0; i<4; i++)
+for(int i = 0; i<point_num+1; i++)
 {
   cout << dTable[13*i] << " , "
        << dTable[13*i+1] << " , "
@@ -223,6 +201,107 @@ for(int i = 0; i<4; i++)
        << dTable[13*i+11] << " , "
        << dTable[13*i+12] << " , " << endl;
 }
+#endif
+    
+    MatrixXd Axis1_B_Matrix(point_num-1, 1);
+    MatrixXd Axis2_B_Matrix(point_num-1, 1);
+    MatrixXd Axis3_B_Matrix(point_num-1, 1);
+    MatrixXd Axis4_B_Matrix(point_num-1, 1);
+    MatrixXd Axis5_B_Matrix(point_num-1, 1);
+    MatrixXd Axis6_B_Matrix(point_num-1, 1);
+    MatrixXd Time_Matrix(point_num-1, point_num-1);
+
+    for(int i = 0;i <= point_num - 2;i++)
+    {
+        for(int j = 0;j <= point_num - 2;j++)
+        {
+            Time_Matrix(i,j) = 0;
+        }
+        Axis1_B_Matrix(i, 0) = (-3 * pow(dTable[13*(i + 2)],2) * dTable[13*i+1] + 3 * (pow(dTable[13*(i + 2)], 2) - pow(dTable[13*(i + 1)], 2)) * dTable[13*(i+1)+1] + 
+        3 * pow(dTable[13*(i+1)],2) * dTable[13*(i+2)+1]) / (dTable[13*(i + 2)] * dTable[13*(i + 1)]);
+        
+        Axis2_B_Matrix(i, 0) = (-3 * pow(dTable[13*(i + 2)],2) * dTable[13*i+3] + 3 * (pow(dTable[13*(i + 2)], 2) - pow(dTable[13*(i + 1)], 2)) * dTable[13*(i+1)+3] + 
+        3 * pow(dTable[13*(i+1)],2) * dTable[13*(i+2)+3]) / (dTable[13*(i + 2)] * dTable[13*(i + 1)]); 
+        
+        Axis3_B_Matrix(i, 0) = (-3 * pow(dTable[13*(i + 2)],2) * dTable[13*i+5] + 3 * (pow(dTable[13*(i + 2)], 2) - pow(dTable[13*(i + 1)], 2)) * dTable[13*(i+1)+5] + 
+        3 * pow(dTable[13*(i+1)],2) * dTable[13*(i+2)+5]) / (dTable[13*(i + 2)] * dTable[13*(i + 1)]); 
+        
+        Axis4_B_Matrix(i, 0) = (-3 * pow(dTable[13*(i + 2)],2) * dTable[13*i+7] + 3 * (pow(dTable[13*(i + 2)], 2) - pow(dTable[13*(i + 1)], 2)) * dTable[13*(i+1)+7] + 
+        3 * pow(dTable[13*(i+1)],2) * dTable[13*(i+2)+7]) / (dTable[13*(i + 2)] * dTable[13*(i + 1)]); 
+        
+        Axis5_B_Matrix(i, 0) = (-3 * pow(dTable[13*(i + 2)],2) * dTable[13*i+9] + 3 * (pow(dTable[13*(i + 2)], 2) - pow(dTable[13*(i + 1)], 2)) * dTable[13*(i+1)+9] + 
+        3 * pow(dTable[13*(i+1)],2) * dTable[13*(i+2)+9]) / (dTable[13*(i + 2)] * dTable[13*(i + 1)]); 
+        
+        Axis6_B_Matrix(i, 0) = (-3 * pow(dTable[13*(i + 2)],2) * dTable[13*i+11] + 3 * (pow(dTable[13*(i + 2)], 2) - pow(dTable[13*(i + 1)], 2)) * dTable[13*(i+1)+11] + 
+        3 * pow(dTable[13*(i+1)],2) * dTable[13*(i+2)+11]) / (dTable[13*(i + 2)] * dTable[13*(i + 1)]); 
+
+        cout << Axis1_B_Matrix(i, 0) << " , " << Axis6_B_Matrix(i, 0) << endl;
+    }
+
+    for (int i  = 0; i <= point_num-2; i++)
+    {
+        Time_Matrix(i, i) = 2 * (dTable[13*(i + 2)] + dTable[13*(i + 1)]);
+
+        if (i > 0 && i < point_num - 2)
+        {
+            Time_Matrix(i, i - 1) = dTable[13*(i + 2)];
+            Time_Matrix(i, i + 1) = dTable[13*(i + 1)];
+        }
+        else if (i == 0)
+        {
+            Time_Matrix(i, i + 1) = dTable[13*(i + 1)];
+        }
+        else if (i == point_num-2)
+        {
+            Time_Matrix(i, i - 1) = dTable[13*(i + 2)];
+        }
+    }
+
+    MatrixXd Axis1_Vel_Matrix(point_num-1, 1);
+    MatrixXd Axis2_Vel_Matrix(point_num-1, 1);
+    MatrixXd Axis3_Vel_Matrix(point_num-1, 1);
+    MatrixXd Axis4_Vel_Matrix(point_num-1, 1);
+    MatrixXd Axis5_Vel_Matrix(point_num-1, 1);
+    MatrixXd Axis6_Vel_Matrix(point_num-1, 1);
+
+
+    Axis1_Vel_Matrix = Time_Matrix.inverse() * Axis1_B_Matrix;
+    Axis2_Vel_Matrix = Time_Matrix.inverse() * Axis2_B_Matrix;
+    Axis3_Vel_Matrix = Time_Matrix.inverse() * Axis3_B_Matrix;
+    Axis4_Vel_Matrix = Time_Matrix.inverse() * Axis4_B_Matrix;
+    Axis5_Vel_Matrix = Time_Matrix.inverse() * Axis5_B_Matrix;
+    Axis6_Vel_Matrix = Time_Matrix.inverse() * Axis6_B_Matrix;
+
+    for(int i = 0; i<point_num-1; i++)
+    {
+        dTable[13*(i+1) + 2] = Axis1_Vel_Matrix(i,0);
+        dTable[13*(i+1) + 4] = Axis2_Vel_Matrix(i,0);
+        dTable[13*(i+1) + 6] = Axis3_Vel_Matrix(i,0);
+        dTable[13*(i+1) + 8] = Axis4_Vel_Matrix(i,0);
+        dTable[13*(i+1) + 10] = Axis5_Vel_Matrix(i,0);
+        dTable[13*(i+1) + 12] = Axis6_Vel_Matrix(i,0);
+    }
+
+    #if 0
+for(int i = 0; i<point_num+1; i++)
+{
+  cout << dTable[13*i] << " , "
+       << dTable[13*i+1] << " , "
+       << dTable[13*i+2] << " , "
+       << dTable[13*i+3] << " , "
+       << dTable[13*i+4] << " , "
+       << dTable[13*i+5] << " , "
+       << dTable[13*i+6] << " , "
+       << dTable[13*i+7] << " , "
+       << dTable[13*i+8] << " , "
+       << dTable[13*i+9] << " , "
+       << dTable[13*i+10] << " , "
+       << dTable[13*i+11] << " , "
+       << dTable[13*i+12] << " , " << endl;
+}
+#endif
+
+  
 
   
   

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import time
 import rospy
 import smach
@@ -9,19 +10,21 @@ from teach_play.srv import MotionPlanning, MotionPlanningRequest
 class SelectMode(smach.State):
 	
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['teach','play', 'failed', 'error'])
+		smach.State.__init__(self, outcomes=['teach','play', 'failed', 'error', 'exit'])
 		rospy.wait_for_service('/select_mode_service')
 		self.triggerSelectMode_service = rospy.ServiceProxy('/select_mode_service', SetBool)
 	
 	def execute(self, userdata):
 		
-		mode = raw_input("please input 'teach' or 'play':")
+		mode = raw_input("please input 'teach' or 'play' or 'exit':")
 		req = SetBoolRequest()
 		if mode == 'teach':
 			req.data = True
 			print(mode)
 		elif mode == 'play':
 			req.data = False
+		elif mode == 'exit':
+			return 'exit'
 		else:
 			return 'error'
 
@@ -69,8 +72,19 @@ class StartMotion(smach.State):
 		
 		while(vel <= 0 or vel > 100):
 			vel = input("please input maximum velocity percentage again:")
+		
 		req = MotionPlanningRequest()
 		req.vel = vel
+
+		motion_type = raw_input("please input motion type 'b' blending move or 'n' non blending move:")
+		
+		while(motion_type != 'b' and motion_type != 'n'):
+			vel = input("please input motion type again:")
+		
+		if motion_type == 'b':
+			req.type = True
+		else:
+			req.type = False
 
 		res = self.triggerStartMotion_service(req)
 		print(res)
@@ -96,7 +110,8 @@ def main():
 								transitions={'teach':'RememberPoint',
 											'play':'StartMotion',
 											'failed':'aborted',
-											'error':'SelectMode'})
+											'error':'SelectMode',
+											'exit':'aborted'})
 
 		smach.StateMachine.add('RememberPoint', RememberPoint(),
 								transitions={'continue':'RememberPoint',

@@ -12,3 +12,9 @@ enum DriverMode
 	CST = 1,
 	CSP = 0
 };
+
+enum MotionType
+{
+	PVT_NON_BLENDING = 0,
+	PVT_BLENDING = 1
+};
