@@ -18,26 +18,28 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   ros::Rate rate(10);
 
-  Robot scorpio_arm(&nh);
-
+  //Robot scorpio_arm(&nh);
+  HwTmIntf EcatMaster;
+  while(ros::ok())
+  {
+    EcatMaster.GetDISignal();
+    rate.sleep();
+  }
   
-  
+  #if 0
   while(ros::ok())
   {
     scorpio_arm.JointStatesPublisher();
     scorpio_arm.RobotPosePublisher();
-  	#if 1
-    //cout << scorpio_arm.torque_mode_ready_flag << endl;
     
     if (scorpio_arm.torque_mode_ready_flag == true)
   	{
       	scorpio_arm.UpdateTorque();
   	}
-
-  	#endif
   	ros::spinOnce();
   	rate.sleep();
   }
+  #endif
 
 	return 0;
 }

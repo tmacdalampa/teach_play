@@ -52,7 +52,7 @@ public:
 	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
 	bool GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	bool ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-
+	
 
 	void UpdateTorque();
 

@@ -41,6 +41,7 @@ class HwTmIntf
     bool MoveTorque(vector<double> torque_cmd);
     bool PVTMotionMove(deque<vector<double>> &play_points, double &max_vel, MotionType &types);
     DriverMode GetDriverMode();
+    void GetDISignal();
 
   private:
     int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);

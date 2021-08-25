@@ -657,3 +657,17 @@ int HwTmIntf::MotionPlanningGoStraight(deque<vector<double>> &play_points, doubl
     return point_num;
 
 }
+
+void HwTmIntf::GetDISignal()
+{
+    try
+    {
+        int res;
+        res = cAxis[6].GetDigInput(1);
+        cout << res << endl;
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+    }
+}
