@@ -43,7 +43,7 @@ Robot::Robot(ros::NodeHandle *nh)
     play_pts_service = nh->advertiseService("/play_pts_service", &Robot::PlayPtsCallback, this);
     go_straight_service = nh->advertiseService("/go_straight_service", &Robot::GoStraightCallback, this);
     clear_pts_service = nh->advertiseService("/clear_pts_service", &Robot::ClearPtsCallback, this);
-
+	//laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
 
     torque_mode_ready_flag = false;
     for(int i = 0; i<JNT_NUM; i++)
@@ -380,4 +380,11 @@ bool Robot::ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger:
 	res.success = true;
 	res.message = "clear points";
     return true;
+}
+
+void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
+{
+	double value = msg->scan_time;
+	cout << "hello" << endl;
+	cout << value << endl;
 }

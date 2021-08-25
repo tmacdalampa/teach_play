@@ -4,6 +4,7 @@
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
 #include <sensor_msgs/JointState.h>
+#include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
 #include <teach_play/MotionPlanning.h>
 
@@ -52,7 +53,7 @@ public:
 	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
 	bool GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	bool ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-	
+	void LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
 
 	void UpdateTorque();
 

@@ -58,8 +58,10 @@ void HwTmIntf::InitConnection()
 {
     
     ELMO_INT32 iEventMask = 0x7FFFFFFF;
-    const ELMO_PINT8 cHostIP= (char*)"192.168.1.7";
-    const ELMO_PINT8 cDestIP= (char*)"192.168.1.3";
+    //const ELMO_PINT8 cHostIP= (char*)"192.168.1.7";
+    //const ELMO_PINT8 cDestIP= (char*)"192.168.1.3";
+    const ELMO_PINT8 cHostIP= (char*)"10.42.0.2";
+    const ELMO_PINT8 cDestIP= (char*)"10.42.0.14";
     
     CMMCPPGlobal::Instance()->SetThrowFlag(true,false);
     CMMCPPGlobal::Instance()->SetThrowWarningFlag(false);
@@ -662,8 +664,9 @@ void HwTmIntf::GetDISignal()
 {
     try
     {
-        int res;
-        res = cAxis[6].GetDigInput(1);
+        ELMO_UINT8 res;
+        res = cAxis[5].GetDigInput(17);//right button
+        //res = cAxis[5].GetDigInput(16);//left button
         cout << res << endl;
     }
     catch(CMMCException exp)
