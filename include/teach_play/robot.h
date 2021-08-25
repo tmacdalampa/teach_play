@@ -40,6 +40,7 @@ public:
 	ros::ServiceServer play_pts_service;
 	ros::ServiceServer go_straight_service;
 	ros::ServiceServer clear_pts_service;
+	ros::Subscriber laser_sub;
 
 
 	Robot(ros::NodeHandle *nh);
