@@ -36,9 +36,10 @@ public:
 	ros::Publisher joint_state_pub;
 	ros::Publisher robot_pose_pub;
 	ros::ServiceServer control_mode_service;
-	ros::ServiceServer remember_pt_service;
-	ros::ServiceServer play_points_service;
-
+	ros::ServiceServer remember_pts_service;
+	ros::ServiceServer play_pts_service;
+	ros::ServiceServer go_straight_service;
+	ros::ServiceServer clear_pts_service;
 
 
 	Robot(ros::NodeHandle *nh);
@@ -46,8 +47,11 @@ public:
 	void JointStatesPublisher();
 	void RobotPosePublisher();
 	bool SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
-	bool RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-	bool StartPlayCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
+	bool RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
+	bool GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+	bool ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+
 
 	void UpdateTorque();
 

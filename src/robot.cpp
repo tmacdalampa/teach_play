@@ -39,8 +39,11 @@ Robot::Robot(ros::NodeHandle *nh)
    	robot_pose_pub = nh->advertise<geometry_msgs::Twist>("/robot_states", 10);
 
     control_mode_service = nh->advertiseService("/select_mode_service", &Robot::SelectModeCallback, this);
-    remember_pt_service = nh->advertiseService("/remember_pt_service", &Robot::RememberPtCallback, this);
-    play_points_service = nh->advertiseService("/start_play_service", &Robot::StartPlayCallback, this);
+    remember_pts_service = nh->advertiseService("/remember_pts_service", &Robot::RememberPtsCallback, this);
+    play_pts_service = nh->advertiseService("/play_pts_service", &Robot::PlayPtsCallback, this);
+    go_straight_service = nh->advertiseService("/go_straight_service", &Robot::GoStraightCallback, this);
+    clear_pts_service = nh->advertiseService("/clear_pts_service", &Robot::ClearPtsCallback, this);
+
 
     torque_mode_ready_flag = false;
     for(int i = 0; i<JNT_NUM; i++)
@@ -122,7 +125,7 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
     return true;
 }
 
-bool Robot::RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool Robot::RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
 	cout << _enc_cnts[0] << ", "
 		 <<	_enc_cnts[1] << ", "
@@ -137,7 +140,7 @@ bool Robot::RememberPtCallback(std_srvs::Trigger::Request &req, std_srvs::Trigge
     return true;
 }
 
-bool Robot::StartPlayCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res)
+bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res)
 {
 	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
 	{
@@ -320,4 +323,60 @@ void Robot::AuxComp(array<double, JNT_NUM> &aux_torque, vector<int> &vel_dir)
 			aux_torque[i] = 0;
 		}
 	}
+}
+
+bool Robot::GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+	
+	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
+	{
+		bool select_mode_result = ElmoMaster->SelectModeProcess(false, torque_mode_ready_flag); //0(false for position mode) 1(true for torque mode)
+		if (select_mode_result == true)
+		{
+			res.success = true;
+			res.message = "Please Change To CSP mode";
+		}
+		else
+		{
+			res.success = false;
+			res.message = "Change To CSP mode failed";
+		}
+	}
+	
+	deque<vector<double>> current_position;
+	current_position.clear();
+	vector<double> straight_points;
+	straight_points.clear();
+	array<double, JNT_NUM> straight_position = {0, 90, 90, 0, 90, 0};
+	for(int i =0; i<JNT_NUM;i++)
+	{
+		straight_points.push_back(_zero_points[i] + (straight_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+	}
+	current_position.push_back(_enc_cnts);
+	current_position.push_back(straight_points);
+	
+	double vel = 0.1*_max_velocity;
+	MotionType type = PVT_GO_STRAIGHT;
+		
+	if (ElmoMaster->PVTMotionMove(current_position, vel, type) != true)
+	{
+		res.message = "Motion Failed";
+		res.success = false;
+	}
+	else
+	{
+		res.message = "Go Straight";
+		res.success = true;
+	}
+	
+	res.success = true;
+    return true;
+}
+
+bool Robot::ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+	_play_points.clear();
+	res.success = true;
+	res.message = "clear points";
+    return true;
 }

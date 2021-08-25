@@ -363,14 +363,17 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
     //MotionPlanning(play_points, max_velm, motion_types);
 
    
-    int point_num;// = play_points.size();
+    int total_pt_num;//
     switch(types)
     { 
         case MotionType::PVT_NON_BLENDING:
-            point_num = MotionPlanningNonBlending(play_points, max_vel);           
+            total_pt_num = MotionPlanningNonBlending(play_points, max_vel);           
             break;
         case MotionType::PVT_BLENDING:
-            point_num = MotionPlanningBlending(play_points, max_vel);      
+            total_pt_num = MotionPlanningBlending(play_points, max_vel);      
+            break;
+        case MotionType::PVT_GO_STRAIGHT:
+            total_pt_num = MotionPlanningGoStraight(play_points, max_vel);  
             break;
     } 
     #if 0    
@@ -405,7 +408,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
     }
     #endif
     #if 1
-    for(int i = 0; i<point_num + 1; i++)
+    for(int i = 0; i < total_pt_num; i++)
     {
         cout << dTable[13*i] << " , "
        << dTable[13*i+1] << " , "
@@ -448,7 +451,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
 
 
         //Append PVT memory table points
-        ulNumberOfPoints =point_num+1;
+        ulNumberOfPoints =total_pt_num;
         ulStartIndex =0;
         ucIsAutoAppend =1;
         ucIsTimeAbsolute =0;
@@ -512,7 +515,7 @@ int HwTmIntf::MotionPlanningNonBlending(deque<vector<double>> &play_points, doub
             cout << "this path time interval = " << max_path/max_vel << endl;
         }
     }
-    return point_num;
+    return point_num+1;
 }
 
 int HwTmIntf::MotionPlanningBlending(deque<vector<double>> &play_points, double &max_vel)
@@ -625,5 +628,32 @@ int HwTmIntf::MotionPlanningBlending(deque<vector<double>> &play_points, double 
         dTable[13*(i+1) + 12] = Axis6_Vel_Matrix(i,0);
     }
 
+    return point_num+1;
+}
+
+int HwTmIntf::MotionPlanningGoStraight(deque<vector<double>> &play_points, double &max_vel)
+{
+    
+    int point_num = play_points.size();
+
+    for(int i = 0; i < point_num; i++)
+    {
+        vector<double> path_each_joint;
+        vector<double> six_axis_pt = play_points[i];      
+        for(int j = 0; j<JNT_NUM; j++)
+        {
+            dTable[13*i + 2*(j+1)] = 0; //vel = 0    
+            dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
+            path_each_joint.push_back(abs(dTable[13*i + 2*(j+1)-1] - dTable[13*(i-1) + 2*(j+1)-1]));
+        }
+        double max_path = *max_element(path_each_joint.begin(), path_each_joint.end());
+
+        dTable[13*i] = max_path/max_vel;
+
+        cout << "this path time interval = " << max_path/max_vel << endl;
+    }
+    dTable[0] = 0;
+    
     return point_num;
+
 }

@@ -45,6 +45,8 @@ class HwTmIntf
   private:
     int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);
     int MotionPlanningBlending(deque<vector<double>> &play_points, double &max_vel);
+    int MotionPlanningGoStraight(deque<vector<double>> &play_points, double &max_vel);
+
     bool _res;
     //variable related with ELMO ethercat master
     MMC_CONNECT_HNDL gConnHndl ;
