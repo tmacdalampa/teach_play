@@ -121,7 +121,7 @@ def main():
 
 	sm = smach.StateMachine(outcomes=['ended'])
 
-	sis = smach_ros.IntrospectionServer('my_smach_introspection_server', sm, '/SM_ROOT')
+	sis = smach_ros.IntrospectionServer('my_smach_introspection_server', sm, '/IRA_Arm')
 
 
 

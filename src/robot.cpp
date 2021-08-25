@@ -242,6 +242,7 @@ void Robot::UpdateTorque()
 		if (_axis_torque_cmd[i] >= 20000)
 		{
 			_axis_torque_cmd[i] = 0;
+			cout << "torque exceed limit" << endl;
 		}
 		#endif
 	}

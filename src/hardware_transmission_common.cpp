@@ -58,7 +58,7 @@ void HwTmIntf::InitConnection()
 {
     
     ELMO_INT32 iEventMask = 0x7FFFFFFF;
-    const ELMO_PINT8 cHostIP= (char*)"192.168.1.5";
+    const ELMO_PINT8 cHostIP= (char*)"192.168.1.7";
     const ELMO_PINT8 cDestIP= (char*)"192.168.1.3";
     
     CMMCPPGlobal::Instance()->SetThrowFlag(true,false);
