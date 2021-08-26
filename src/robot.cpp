@@ -421,7 +421,7 @@ bool Robot::ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger:
 
 void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
-	cout << "get_message" << endl;
+	//cout << "get_message" << endl;
 	if (ElmoMaster->GetDriverMode() == DriverMode::CSP)
 	{	
 		vector<float> distance = msg->ranges;

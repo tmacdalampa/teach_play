@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "cobot_controller");
   ros::NodeHandle nh;
   ros::Rate rate(10);
-
+  cout << "========== this works for 15 kg arm 3==========" << endl;
   Robot scorpio_arm(&nh);
   
   
