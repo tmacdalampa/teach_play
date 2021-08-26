@@ -45,8 +45,9 @@ HwTmIntf::~HwTmIntf()
 {
     _res = DisableAll();
 
-    OPM402 eMode_now = cAxis[5].GetOpMode();
-    if (eMode_now == OPM402_CYCLIC_SYNC_POSITION_MODE)
+    DriverMode mode = GetDriverMode();
+
+    if (mode == CSP)
     {
         _res = DisableGroup();
     }
@@ -153,11 +154,11 @@ bool HwTmIntf::DisableAll()
     {
         for(int i = 0; i < JNT_NUM; i++)
         {
-            if (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
-            {
-                cAxis[i].Stop(); //if it is still moving, start first
-                while (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
-            }
+            //if (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
+            //{
+            //    cAxis[i].Stop(); //if it is still moving, start first
+            //    while (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
+            //}
 		    if (!(cAxis[i].ReadStatus()& NC_AXIS_DISABLED_MASK))
             {
                 cAxis[i].PowerOff();
@@ -180,10 +181,14 @@ bool HwTmIntf::DisableGroup()
 {
     try
     {   
-        cGrpRef.GroupDisable();
+        if (!(cGrpRef.ReadStatus()& NC_AXIS_DISABLED_MASK))
+        {    
+            cGrpRef.GroupDisable();
+        }
         while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
-        return true;
+        
         cout << "disable group success" << endl;
+        return true;
     }
     catch(CMMCException exp)
     {
@@ -660,14 +665,25 @@ int HwTmIntf::MotionPlanningGoStraight(deque<vector<double>> &play_points, doubl
 
 }
 
-void HwTmIntf::GetDISignal()
+DIState HwTmIntf::GetDISignal(int digital_input_number)
 {
     try
     {
         ELMO_UINT8 res;
-        res = cAxis[5].GetDigInput(17);//right button
-        //res = cAxis[5].GetDigInput(16);//left button
-        cout << res << endl;
+        res = cAxis[5].GetDigInput(digital_input_number);
+        //digital_input_number = 16, left button
+        //digital_input_number = 17, right button
+        DIState state;
+        switch(res)
+        { 
+            case 1:
+                state = BUTTON_NON_PRESSED;           
+                break;
+            case 0:
+                state = BUTTON_PRESSED;      
+                break;
+        }
+        return state;
     }
     catch(CMMCException exp)
     {

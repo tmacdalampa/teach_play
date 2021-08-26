@@ -72,6 +72,7 @@ private:
 	vector<double> _M; //unit kg
 	vector<double> _motor_torque_const; //unit Nm/Arms
 	vector<double> _motor_friction_current; //unit mAmp
+	vector<int> _digital_input_number;
 	int _enc_resolution; //encoder counts per rev
 	int _max_velocity; //maximum velocity of joint vel, cnts/sec
 

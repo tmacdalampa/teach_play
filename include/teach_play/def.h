@@ -19,3 +19,9 @@ enum MotionType
 	PVT_BLENDING = 1,
 	PVT_GO_STRAIGHT = 2
 };
+
+enum DIState
+{
+	BUTTON_PRESSED = 0,
+	BUTTON_NON_PRESSED = 1
+};

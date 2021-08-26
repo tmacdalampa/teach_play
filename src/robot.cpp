@@ -35,6 +35,9 @@ Robot::Robot(ros::NodeHandle *nh)
     if( !nh->getParam("/max_velocity", _max_velocity))
     	ROS_ERROR("Failed to get parameter from server.");
 
+	if( !nh->getParam("/digital_input_number", _digital_input_number))
+    	ROS_ERROR("Failed to get parameter from server.");
+
     joint_state_pub = nh->advertise<sensor_msgs::JointState>("/joint_states", 10);
    	robot_pose_pub = nh->advertise<geometry_msgs::Twist>("/robot_states", 10);
 
@@ -43,7 +46,7 @@ Robot::Robot(ros::NodeHandle *nh)
     play_pts_service = nh->advertiseService("/play_pts_service", &Robot::PlayPtsCallback, this);
     go_straight_service = nh->advertiseService("/go_straight_service", &Robot::GoStraightCallback, this);
     clear_pts_service = nh->advertiseService("/clear_pts_service", &Robot::ClearPtsCallback, this);
-	//laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
+	laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
 
     torque_mode_ready_flag = false;
     for(int i = 0; i<JNT_NUM; i++)
@@ -309,20 +312,54 @@ void Robot::GravityComp(array<double, JNT_NUM> &g_torque, vector<double> &axis_d
 
 void Robot::AuxComp(array<double, JNT_NUM> &aux_torque, vector<int> &vel_dir)
 {
+	double vel_factor;
+	DIState left_button_state = ElmoMaster->GetDISignal(_digital_input_number[0]);
+	DIState right_button_state = ElmoMaster->GetDISignal(_digital_input_number[1]);
+
+	switch(left_button_state)
+	{
+		case BUTTON_PRESSED:
+			vel_factor = 2;
+			break;
+		case BUTTON_NON_PRESSED:
+			vel_factor = 1;
+			break;
+	}
+
+
 	for(int i = 0; i<JNT_NUM; i++)
 	{
 		if (vel_dir[i] == VelDir::POSITIVE)
 		{
-			aux_torque[i] = _motor_friction_current[i];
+			if(i > 2)
+			{
+				vel_factor = 1;
+			}
+			aux_torque[i] = _motor_friction_current[i] * vel_factor;
 		}
 		else if (vel_dir[i] == VelDir::NEGATIVE)
 		{
-			aux_torque[i] = -_motor_friction_current[i];
+			if(i > 2)
+			{
+				vel_factor = 1;
+			}
+			aux_torque[i] = -_motor_friction_current[i] * vel_factor; //only plus axis123
 		}
 		else
 		{
 			aux_torque[i] = 0;
 		}
+	}
+
+	switch(right_button_state)
+	{
+		case BUTTON_PRESSED:
+			aux_torque[4] = 0;
+			aux_torque[2] = 0;
+			break;
+		case BUTTON_NON_PRESSED:
+			vel_factor = 1;
+			break;
 	}
 }
 
@@ -385,6 +422,4 @@ bool Robot::ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger:
 void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
 	double value = msg->scan_time;
-	cout << "hello" << endl;
-	cout << value << endl;
 }
