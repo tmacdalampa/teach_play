@@ -363,7 +363,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
     ELMO_UINT8 ucIsTimeAbsolute;
     NC_MOTION_TABLE_TYPE_ENUM eTableType = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
 
-    MC_PATH_REF handle;
+    
     
      
 
@@ -471,7 +471,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
         cGrpRef.MovePVT(handle,eCoordSystem);
         std::cout << "Move!!!" << std::endl;
 
-
+        /*
         //wait till motin ends
         while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
         //return 0;
@@ -479,6 +479,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
         cGrpRef.UnloadPVTTable(handle);
         std::cout << "UnloadPVTTable" << std::endl;
         while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
+        */
         #endif
         return true;
 
@@ -693,14 +694,38 @@ DIState HwTmIntf::GetDISignal(int digital_input_number)
 
 bool HwTmIntf::StopMotion()
 {   try
-    {
-        if (!(cGrpRef.ReadStatus()& NC_GROUP_STANDBY_MASK))
+    {   
+        cGrpRef.GroupStop(1000000, 10000000, MC_BUFFERED_MODE);
+        /*
+        _res = DisableGroup();
+        for(int i = 0; i < JNT_NUM; i++)
         {
-            cGrpRef.GroupStop(1000000, 100000000, MC_ABORTING_MODE);
+            if (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
+            {
+                cAxis[i].Stop(); //if it is still moving, start first
+                while (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
+            }
         }
+        */
     }
     catch(CMMCException exp)
     {
         Exception(exp);
     }
+}
+
+GroupState HwTmIntf::CheckGroupStatus()
+{
+    if(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK))
+        return GroupState::MOTION;//still moving
+    else
+        return GroupState::STOP;
+    
+}
+
+void HwTmIntf::UnloadTable()
+{
+    cGrpRef.UnloadPVTTable(handle);
+    cout << "UnloadPVTTable" << endl;
+    while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
 }

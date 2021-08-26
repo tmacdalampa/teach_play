@@ -166,8 +166,21 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
         			type = PVT_BLENDING;
             		break;
     		}
-
-
+			ElmoMaster->PVTMotionMove(_play_points, vel, type);
+			GroupState state;
+			while(1)
+			{
+				state = ElmoMaster->CheckGroupStatus();
+				if (state == STOP)
+				{
+					ElmoMaster->UnloadTable();
+					break;
+				}
+				ros::spinOnce();
+			}
+			res.message = "Motion End";
+			res.success = true;
+			/*
 			if (ElmoMaster->PVTMotionMove(_play_points, vel, type) != true)
 			{
 				res.message = "Motion Failed";
@@ -177,7 +190,8 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
 			{
 				res.message = "Start Play";
 				res.success = true;
-			}		
+			}
+			*/		
 		}
 		else
 		{
@@ -421,7 +435,7 @@ bool Robot::ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger:
 
 void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
-	cout << "get_message" << endl;
+	//cout << "get_message" << endl;
 	if (ElmoMaster->GetDriverMode() == DriverMode::CSP)
 	{	
 		vector<float> distance = msg->ranges;
@@ -430,7 +444,7 @@ void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 		if (it != distance.end())
 		{    
 			cout << "something in" << endl;
-			//bool res = ElmoMaster->StopMotion();
+			bool res = ElmoMaster->StopMotion();
 		}
     	else
         	cout << "safe" << endl;

@@ -25,3 +25,9 @@ enum DIState
 	BUTTON_PRESSED = 0,
 	BUTTON_NON_PRESSED = 1
 };
+
+enum GroupState
+{
+	MOTION = 1,
+	STOP = 0
+};

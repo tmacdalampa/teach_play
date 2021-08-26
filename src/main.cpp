@@ -18,10 +18,17 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   ros::Rate rate(10);
 
-  Robot scorpio_arm(&nh);
-  
+  /*
+  HwTmIntf EcatMaster;
+  while(ros::ok())
+  {
+    EcatMaster.ReadGroupStatus();
+    rate.sleep();
+  }
+  */
   
   #if 1
+  Robot scorpio_arm(&nh);
   while(ros::ok())
   {
     scorpio_arm.JointStatesPublisher();

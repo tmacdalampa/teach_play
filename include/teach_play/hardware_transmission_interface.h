@@ -43,6 +43,9 @@ class HwTmIntf
     DriverMode GetDriverMode();
     DIState GetDISignal(int digital_input_number);
     bool StopMotion();
+    void ReadGroupStatus();
+    GroupState CheckGroupStatus();
+    void UnloadTable();
 
   private:
     int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);
@@ -60,6 +63,8 @@ class HwTmIntf
     RTE_CLBKP pRTEClbk;
     OPM402 eMode;
     ELMO_DOUBLE dTable[NC_PVT_ECAM_MAX_ARRAY_SIZE];
+
+    MC_PATH_REF handle;
 
 
 };
