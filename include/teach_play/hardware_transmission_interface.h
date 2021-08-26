@@ -42,6 +42,7 @@ class HwTmIntf
     bool PVTMotionMove(deque<vector<double>> &play_points, double &max_vel, MotionType &types);
     DriverMode GetDriverMode();
     DIState GetDISignal(int digital_input_number);
+    bool StopMotion();
 
   private:
     int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);

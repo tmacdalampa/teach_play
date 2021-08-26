@@ -10,7 +10,7 @@
 
 #include "teach_play/hardware_transmission_interface.h"
 
-
+#include <algorithm>
 #include <array>
 #include <eigen3/Eigen/Eigen>
 #include <eigen3/Eigen/Dense>

@@ -421,5 +421,19 @@ bool Robot::ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger:
 
 void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
-	double value = msg->scan_time;
+	cout << "get_message" << endl;
+	if (ElmoMaster->GetDriverMode() == DriverMode::CSP)
+	{	
+		vector<float> distance = msg->ranges;
+		#if 1
+		vector<float>::iterator it = find_if(distance.begin(), distance.end(), [](double value) { return value <= 1; });
+		if (it != distance.end())
+		{    
+			cout << "something in" << endl;
+			//bool res = ElmoMaster->StopMotion();
+		}
+    	else
+        	cout << "safe" << endl;
+		#endif
+	}
 }

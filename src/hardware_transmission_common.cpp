@@ -690,3 +690,17 @@ DIState HwTmIntf::GetDISignal(int digital_input_number)
         Exception(exp);
     }
 }
+
+bool HwTmIntf::StopMotion()
+{   try
+    {
+        if (!(cGrpRef.ReadStatus()& NC_GROUP_STANDBY_MASK))
+        {
+            cGrpRef.GroupStop(1000000, 100000000, MC_ABORTING_MODE);
+        }
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+    }
+}
