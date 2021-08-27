@@ -383,37 +383,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
             total_pt_num = MotionPlanningGoStraight(play_points, max_vel);  
             break;
     } 
-    #if 0    
-    for(int i = 0; i < point_num +1; i++)
-    {
-        if (i == 0)
-        {
-            dTable[13*i] = 0; //t0=0
-      
-            for(int j = 0; j<JNT_NUM; j++)
-            {
-                dTable[13*i + 2*(j+1)] = 0; //vel = 0
-                vector<double> six_axis_pt = play_points.back();
-                dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-            }
-        }
-        else
-        {
-            vector<double> path_each_joint;
-            vector<double> six_axis_pt = play_points[i-1];      
-            for(int j = 0; j<JNT_NUM; j++)
-            {
-                dTable[13*i + 2*(j+1)] = 0; //vel = 0    
-                dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-                path_each_joint.push_back(abs(dTable[13*i + 2*(j+1)-1] - dTable[13*(i-1) + 2*(j+1)-1]));
-            }
-            double max_path = *max_element(path_each_joint.begin(), path_each_joint.end());
-
-            dTable[13*i] = max_path/max_vel;
-            cout << "this path time interval = " << max_path/max_vel << endl;
-        }
-    }
-    #endif
+    
     #if 1
     for(int i = 0; i < total_pt_num; i++)
     {
@@ -465,7 +435,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
         eTableType = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
         cGrpRef.AppendPVTPoints(handle, dTable, ulNumberOfPoints, ucIsTimeAbsolute, eTableType); //auto
         std::cout << "AppendPVTPoints!!!" << std::endl;
-
+        int haha = MMC_GetTableIndex();
 
         //Move PVT table
         cGrpRef.MovePVT(handle,eCoordSystem);
@@ -695,7 +665,11 @@ DIState HwTmIntf::GetDISignal(int digital_input_number)
 bool HwTmIntf::StopMotion()
 {   try
     {   
-        cGrpRef.GroupStop(1000000, 10000000, MC_BUFFERED_MODE);
+        if(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK))
+        {
+            cGrpRef.GroupHalt(1000000, 10000000, MC_ABORTING_MODE);
+        }
+        
         /*
         _res = DisableGroup();
         for(int i = 0; i < JNT_NUM; i++)

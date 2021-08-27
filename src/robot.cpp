@@ -410,18 +410,20 @@ bool Robot::GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigge
 	double vel = 0.1*_max_velocity;
 	MotionType type = PVT_GO_STRAIGHT;
 		
-	if (ElmoMaster->PVTMotionMove(current_position, vel, type) != true)
+	ElmoMaster->PVTMotionMove(current_position, vel, type);
+	GroupState state;
+	while(1)
 	{
-		res.message = "Motion Failed";
-		res.success = false;
+		state = ElmoMaster->CheckGroupStatus();
+		if (state == STOP)
+		{
+			ElmoMaster->UnloadTable();
+			break;
+		}
 	}
-	else
-	{
-		res.message = "Go Straight";
-		res.success = true;
-	}
-	
+	res.message = "Motion End";
 	res.success = true;
+	
     return true;
 }
 
@@ -446,8 +448,8 @@ void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 			cout << "something in" << endl;
 			bool res = ElmoMaster->StopMotion();
 		}
-    	else
-        	cout << "safe" << endl;
+    	//else
+        	//cout << "safe" << endl;
 		#endif
 	}
 }
