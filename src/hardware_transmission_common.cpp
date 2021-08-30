@@ -463,7 +463,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
         //Move PVT table
         cGrpRef.MovePVT(handle,eCoordSystem);
         std::cout << "Move!!!" << std::endl;
-
+        //int a = cGrpRef.GetPVTTableIndex(handle);
 
         //wait till motin ends
         while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
