@@ -224,9 +224,24 @@ add_executable(eigen_test
   src/eigen_test.cpp
 )
 
+
 target_link_libraries(eigen_test
   ${catkin_LIBRARIES}
 )
+
+
+add_executable(add_pt_dynamic
+  src/add_pt_dynamic.cpp
+  src/hardware_transmission_common.cpp
+)
+
+target_link_libraries(add_pt_dynamic
+  MMC_APP_LinuxRpc64
+  MMCPP_LinuxRpc64
+  ${catkin_LIBRARIES}
+  #elmo_controller
+)
+
 
 add_executable(teach_and_play
   src/main.cpp
