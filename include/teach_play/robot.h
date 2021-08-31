@@ -86,6 +86,8 @@ private:
 	vector<double> _enc_cnts;
 	vector<int> _vel_dir;
 	deque<vector<double>> _play_points;
+	deque<vector<double>> _reapir_points;
+	bool _somethingin_flag;
 
 	void FK(vector<double> &robot_pose, vector<double> &axis_deg);
 	Matrix4d GetTFMatrix(double axis_deg, int id);

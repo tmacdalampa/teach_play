@@ -49,6 +49,7 @@ Robot::Robot(ros::NodeHandle *nh)
 	laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
 
     torque_mode_ready_flag = false;
+	_somethingin_flag = false;
     for(int i = 0; i<JNT_NUM; i++)
     {
     	_axis_deg.push_back(0);
@@ -166,17 +167,54 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
         			type = PVT_BLENDING;
             		break;
     		}
-			ElmoMaster->PVTMotionMove(_play_points, vel, type);
-			GroupState state;
-			while(1)
-			{
-				state = ElmoMaster->CheckGroupStatus();
-				if (state == STOP)
+			bool repair = false;
+			int index = 0;
+			int size = _play_points.size();
+			
+			while (1)
+			{	
+				if (_somethingin_flag == false)
 				{
-					ElmoMaster->UnloadTable();
-					break;
+					if (repair != true)
+					{ 
+						ElmoMaster->PVTMotionMove(_play_points, vel, type);
+					}
+					else 
+					{
+						MotionType type0 = PVT_GO_STRAIGHT;
+						_reapir_points.push_back(_enc_cnts);
+						for (int i = index; i < _play_points.size() ;i++)
+						{
+							_reapir_points.push_back(_play_points[i]);
+						}
+						ElmoMaster->PVTMotionMove(_reapir_points, vel, type0);
+					}
+							GroupState state;
+					while(1)
+					{
+						ros::spinOnce();
+						state = ElmoMaster->CheckGroupStatus();
+						if (state == STOP)
+						{
+							index = ElmoMaster->GetTableIndex();
+							ElmoMaster->UnloadTable();
+							break;
+						}
+					}
+					if (index == size-1)
+					{	
+						cout << "motion end" << endl;
+						break;
+					}
+					else
+					{
+						repair = true;
+						size = _reapir_points.size();
+						cout << "shut dwon by sensor" << endl;
+					}
 				}
-				ros::spinOnce();
+
+		
 			}
 			res.message = "Motion End";
 			res.success = true;
@@ -444,12 +482,16 @@ void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 		#if 1
 		vector<float>::iterator it = find_if(distance.begin(), distance.end(), [](double value) { return value <= 1; });
 		if (it != distance.end())
-		{    
+		{   
+			_somethingin_flag = true; 
 			cout << "something in" << endl;
 			bool res = ElmoMaster->StopMotion();
 		}
-    	//else
-        	//cout << "safe" << endl;
+    	else
+        {
+			//cout << "safe" << endl;
+			_somethingin_flag = false;
+		}
 		#endif
 	}
 }

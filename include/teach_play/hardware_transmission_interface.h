@@ -40,13 +40,14 @@ class HwTmIntf
     bool ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
     bool MoveTorque(vector<double> torque_cmd);
     bool PVTMotionMove(deque<vector<double>> &play_points, double &max_vel, MotionType &types);
-    bool AddPtDynamic(deque<vector<double>>);
+    bool AddPtDynamic(deque<vector<double>> &points);
     DriverMode GetDriverMode();
     DIState GetDISignal(int digital_input_number);
     bool StopMotion();
     void ReadGroupStatus();
     GroupState CheckGroupStatus();
     void UnloadTable();
+    int GetTableIndex();
 
   private:
     int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);

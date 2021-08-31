@@ -22,9 +22,9 @@ int main(int argc, char** argv)
     MotionType type = PVT_NON_BLENDING;
     vector<double> axis_deg1 = {529392, 475362, -1767978, -4064430, 19578637, 14497598};
     //vector<double> axis_deg1 = {0, 0, 0, 0, 0, 0};
-    int point_num = 12;
+    int point_num = 16;
 
-    for(int i =0; i<=point_num; i++)
+    for(int i =0; i< point_num; i++)
     {
         #if 0
         cout << axis_deg1[0] << " , "
@@ -37,19 +37,19 @@ int main(int argc, char** argv)
         play_points.push_back(axis_deg1);
         int j = i/10;
 
-        if (j % 2 == 0)axis_deg1[5] += 10000;
-        else axis_deg1[5] -= 10000;    
+        if (j % 2 == 0)axis_deg1[5] += 1000000;
+        else axis_deg1[5] -= 1000000;    
     }
+  
+    HwTmIntf EcatMaster;
+    bool mode = false;
+    bool mode_flag = false;
+
+    EcatMaster.SelectModeProcess(mode, mode_flag); //select mode to cyclic position mode
+    bool tmp = EcatMaster.AddPtDynamic(play_points);
 
     play_points.clear();
     axis_deg1.clear();
-  
-  HwTmIntf EcatMaster;
-  bool mode = false;
-  bool mode_flag = false;
-
-  EcatMaster.SelectModeProcess(mode, mode_flag); //select mode to cyclic position mode
-  EcatMaster.AddPtDynamic(play_points);
   
   
   
