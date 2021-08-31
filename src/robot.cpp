@@ -173,6 +173,7 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
 			
 			while (1)
 			{	
+				ros::spinOnce();
 				if (_somethingin_flag == false)
 				{
 					if (repair != true)
@@ -182,7 +183,10 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
 					else 
 					{
 						MotionType type0 = PVT_GO_STRAIGHT;
-						_reapir_points.push_back(_enc_cnts);
+						vector<double> enc_cnts;
+						vector<int> vel_dir;
+						bool res = ElmoMaster->ReadENC(enc_cnts, vel_dir);
+						_reapir_points.push_back(enc_cnts);
 						for (int i = index; i < _play_points.size() ;i++)
 						{
 							_reapir_points.push_back(_play_points[i]);
