@@ -17,6 +17,7 @@
 #include <string>
 #include <cmath>
 #include <deque>
+#include <unistd.h>
 
 #define JNT_NUM 6
 #define PI 3.14157
@@ -41,7 +42,9 @@ public:
 	ros::ServiceServer play_pts_service;
 	ros::ServiceServer go_straight_service;
 	ros::ServiceServer clear_pts_service;
+	ros::ServiceServer pause_arm_service;
 	ros::Subscriber laser_sub;
+	//ros::Rate rate(10);
 
 
 	Robot(ros::NodeHandle *nh);
@@ -53,7 +56,8 @@ public:
 	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
 	bool GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	bool ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-	void LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
+	//void LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
+	bool PauseArmCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
 	void UpdateTorque();
 
@@ -87,7 +91,7 @@ private:
 	vector<int> _vel_dir;
 	deque<vector<double>> _play_points;
 	deque<vector<double>> _reapir_points;
-	bool _somethingin_flag;
+	bool _pause_flag;
 
 	void FK(vector<double> &robot_pose, vector<double> &axis_deg);
 	Matrix4d GetTFMatrix(double axis_deg, int id);

@@ -672,6 +672,7 @@ bool HwTmIntf::StopMotion()
         {
             cout << "stop" << endl;
             cGrpRef.GroupHalt(1000000, 10000000, MC_ABORTING_MODE);
+            while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
         }
         
         /*
