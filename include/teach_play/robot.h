@@ -89,6 +89,9 @@ private:
 
 	vector<double> _enc_cnts;
 	vector<int> _vel_dir;
+	vector<double> _enc_cnts_tmp;
+	vector<int> _vel_dir_tmp;
+	
 	deque<vector<double>> _play_points;
 	deque<vector<double>> _reapir_points;
 	bool _pause_flag;

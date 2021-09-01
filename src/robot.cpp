@@ -53,6 +53,9 @@ Robot::Robot(ros::NodeHandle *nh)
 	
 	_pause_flag = false;
 
+	_play_points.clear();
+	_reapir_points.clear();
+
     for(int i = 0; i<JNT_NUM; i++)
     {
     	_axis_deg.push_back(0);
@@ -60,6 +63,8 @@ Robot::Robot(ros::NodeHandle *nh)
 		_enc_cnts.push_back(0);
 		_axis_torque_cmd.push_back(0);
 		_vel_dir.push_back(0);
+		_enc_cnts_tmp.push_back(0);
+		_vel_dir_tmp.push_back(0);
 	}
 
 }
@@ -71,6 +76,8 @@ Robot::~Robot()
 	_enc_cnts.clear();
 	_axis_torque_cmd.clear();
 	_vel_dir.clear();
+	_play_points.clear();
+	_reapir_points.clear();
 	delete ElmoMaster;
 }
 
@@ -195,23 +202,21 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
 			while(1)
 			{
 				////////////////////////---------------------------////////////////// motion state
-				if (repair_flag != true)
+				if (_pause_flag == false && repair_flag != true)
 				{ 
 					ElmoMaster->PVTMotionMove(_play_points, vel, type);
 				}
-				else
+				else if (_pause_flag == false && repair_flag == true)
 				{
 					MotionType type0 = PVT_GO_STRAIGHT;
-					vector<double> enc_cnts;
-					vector<int> vel_dir;
-					bool res = ElmoMaster->ReadENC(enc_cnts, vel_dir);
-					_reapir_points.push_back(enc_cnts);
-					size = _reapir_points.size();
-
+					
+					bool res = ElmoMaster->ReadENC(_enc_cnts_tmp, _vel_dir_tmp);
+					_reapir_points.push_back(_enc_cnts_tmp);
 					for (int i = index; i < _play_points.size() ;i++)
 					{
 						_reapir_points.push_back(_play_points[i]);
 					}
+					size = _reapir_points.size();
 					ElmoMaster->PVTMotionMove(_reapir_points, vel, type0);
 				}
 				GroupState state;
@@ -225,6 +230,7 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
 					if (state == STOP)
 					{
 						index = ElmoMaster->GetTableIndex();
+						
 						ElmoMaster->UnloadTable();
 						break;
 					}
@@ -236,19 +242,27 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
 				/////////////////////////------------------------------/////////////////// pause state
 				while(_pause_flag == true)
 				{
-
+					//cout << "wait _pause_flag_rest_true" << endl;
 					ros::spinOnce();
 					sleep(0.1);
 				}
-				if (index == size-1)
+				if (repair_flag == false && index == size-1)
 				{	
-					cout << "motion end" << endl;
+					cout << "motion end by normal" << endl;
+					break;
+				}
+				else if(repair_flag == true && index == size-2)
+				{
+					cout << "motion end by repair" << endl;
+					repair_flag = false;
+					_reapir_points.clear();
 					break;
 				}
 				else
 				{
 					repair_flag = true;
 					//size = _reapir_points.size();
+					_reapir_points.clear();
 					cout << "shut dwon by sensor" << endl;
 				}
 				sleep(0.1);
