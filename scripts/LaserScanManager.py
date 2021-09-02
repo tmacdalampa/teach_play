@@ -73,8 +73,8 @@ class LaserScanManager():
     def listener(self):
         
         rospy.init_node('LaserScanManager', anonymous=True)
-        #rospy.Subscriber("/octopoda/amr0/front_scan", LaserScan, self.callback)
-        rospy.Subscriber("/octopoda/amr0/front_scan", Float32, self.callback)
+        rospy.Subscriber("/octopoda/amr0/front_scan", LaserScan, self.callback)
+        #rospy.Subscriber("/octopoda/amr0/front_scan", Float32, self.callback)
         
         
         rospy.spin()

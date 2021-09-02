@@ -47,11 +47,11 @@ Robot::Robot(ros::NodeHandle *nh)
     go_straight_service = nh->advertiseService("/go_straight_service", &Robot::GoStraightCallback, this);
     clear_pts_service = nh->advertiseService("/clear_pts_service", &Robot::ClearPtsCallback, this);
 	//laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
-	pause_arm_service = nh->advertiseService("/pause_arm_service", &Robot::PauseArmCallback, this);
+	speed_override_service = nh->advertiseService("/speed_override_service", &Robot::SpeedOverrideCallback, this);
 
     torque_mode_ready_flag = false;
 	
-	_pause_flag = false;
+	_sensor_flag = false;
 
 	_play_points.clear();
 	_reapir_points.clear();
@@ -123,6 +123,7 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 	if (req.data == true)
 	{
 		res.message = "change to torque mode";
+		_sensor_flag = false;
 	}
 	else
 	{
@@ -131,6 +132,7 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 	if (select_mode_result == true)
 	{
 		res.success = true;
+		_sensor_flag = true;
 	}
 	else
 	{
@@ -139,6 +141,7 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
     return true;
 }
 
+/*
 bool Robot::PauseArmCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
 {	
 	if (req.data == true)
@@ -157,6 +160,7 @@ bool Robot::PauseArmCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool:
 	
     return true;
 }
+*/
 
 bool Robot::RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
@@ -196,126 +200,20 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
         			type = PVT_BLENDING;
             		break;
     		}
-    		bool repair_flag = false;
-    		int size = _play_points.size();
-    		int index;
+    		
+			ElmoMaster->PVTMotionMove(_play_points, vel, type);
+			GroupState state;
 			while(1)
 			{
-				////////////////////////---------------------------////////////////// motion state
-				if (_pause_flag == false && repair_flag != true)
-				{ 
-					ElmoMaster->PVTMotionMove(_play_points, vel, type);
-				}
-				else if (_pause_flag == false && repair_flag == true)
+				if (state == STOP)
 				{
-					MotionType type0 = PVT_GO_STRAIGHT;
-					
-					bool res = ElmoMaster->ReadENC(_enc_cnts_tmp, _vel_dir_tmp);
-					_reapir_points.push_back(_enc_cnts_tmp);
-					for (int i = index; i < _play_points.size() ;i++)
-					{
-						_reapir_points.push_back(_play_points[i]);
-					}
-					size = _reapir_points.size();
-					ElmoMaster->PVTMotionMove(_reapir_points, vel, type0);
-				}
-				GroupState state;
-				while(1)
-				{
-					state = ElmoMaster->CheckGroupStatus();
-					if (_pause_flag == true)
-					{
-						ElmoMaster->StopMotion();
-					}
-					if (state == STOP)
-					{
-						index = ElmoMaster->GetTableIndex();
-						
-						ElmoMaster->UnloadTable();
-						break;
-					}
-					ros::spinOnce();
-					//rate.sleep();
-					sleep(0.1);
-				}
-
-				/////////////////////////------------------------------/////////////////// pause state
-				while(_pause_flag == true)
-				{
-					//cout << "wait _pause_flag_rest_true" << endl;
-					ros::spinOnce();
-					sleep(0.1);
-				}
-				if (repair_flag == false && index == size-1)
-				{	
-					cout << "motion end by normal" << endl;
+					ElmoMaster->UnloadTable();
 					break;
 				}
-				else if(repair_flag == true && index == size-2)
-				{
-					cout << "motion end by repair" << endl;
-					repair_flag = false;
-					_reapir_points.clear();
-					break;
-				}
-				else
-				{
-					repair_flag = true;
-					//size = _reapir_points.size();
-					_reapir_points.clear();
-					cout << "shut dwon by sensor" << endl;
-				}
-				sleep(0.1);
-			}
-			/*
-			while (1)
-			{	
 				ros::spinOnce();
-				if (_somethingin_flag == false)
-				{
-					if (repair != true)
-					{ 
-						ElmoMaster->PVTMotionMove(_play_points, vel, type);
-					}
-					else 
-					{
-						MotionType type0 = PVT_GO_STRAIGHT;
-						vector<double> enc_cnts;
-						vector<int> vel_dir;
-						bool res = ElmoMaster->ReadENC(enc_cnts, vel_dir);
-						_reapir_points.push_back(enc_cnts);
-						for (int i = index; i < _play_points.size() ;i++)
-						{
-							_reapir_points.push_back(_play_points[i]);
-						}
-						ElmoMaster->PVTMotionMove(_reapir_points, vel, type0);
-					}
-							GroupState state;
-					while(1)
-					{
-						ros::spinOnce();
-						state = ElmoMaster->CheckGroupStatus();
-						if (state == STOP)
-						{
-							index = ElmoMaster->GetTableIndex();
-							ElmoMaster->UnloadTable();
-							break;
-						}
-					}
-					if (index == size-1)
-					{	
-						cout << "motion end" << endl;
-						break;
-					}
-					else
-					{
-						repair = true;
-						size = _reapir_points.size();
-						cout << "shut dwon by sensor" << endl;
-					}
-				}		
 			}
-			*/
+			_sensor_flag = false;
+
 			res.message = "Motion End";
 			res.success = true;
 	
@@ -586,3 +484,15 @@ void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 	}
 }
 */
+
+bool Robot::SpeedOverrideCallback(teach_play::SpeedOverride::Request &req, teach_play::SpeedOverride::Response &res)
+{
+	res.message = "called speed_override_service";
+	if (_sensor_flag == true)
+	{
+		ElmoMaster->SetSpeedOverride(req.vel_factor);
+		res.message = "SpeedOverride is set";
+	}
+	res.success = true;
+	return true;
+}

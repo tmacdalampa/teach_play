@@ -981,3 +981,16 @@ int HwTmIntf::GetTableIndex()
     int index = cGrpRef.GetPVTTableIndex(handle);
     return index;
 }
+
+bool HwTmIntf::SetSpeedOverride(double vel_factor)
+{
+    try
+    {
+        cGrpRef.GroupSetOverride(vel_factor, 1, 1, 0);
+        return true;
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+    }
+}

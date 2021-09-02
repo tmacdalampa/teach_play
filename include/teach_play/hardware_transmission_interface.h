@@ -48,6 +48,7 @@ class HwTmIntf
     GroupState CheckGroupStatus();
     void UnloadTable();
     int GetTableIndex();
+    bool SetSpeedOverride(double vel_factor);
 
   private:
     int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);

@@ -7,6 +7,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
 #include <teach_play/MotionPlanning.h>
+#include <teach_play/SpeedOverride.h>
 
 #include "teach_play/hardware_transmission_interface.h"
 
@@ -42,7 +43,7 @@ public:
 	ros::ServiceServer play_pts_service;
 	ros::ServiceServer go_straight_service;
 	ros::ServiceServer clear_pts_service;
-	ros::ServiceServer pause_arm_service;
+	ros::ServiceServer speed_override_service;
 	ros::Subscriber laser_sub;
 	//ros::Rate rate(10);
 
@@ -53,11 +54,13 @@ public:
 	void RobotPosePublisher();
 	bool SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 	bool RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
 	bool GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	bool ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	//void LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
-	bool PauseArmCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+	
+	bool SpeedOverrideCallback(teach_play::SpeedOverride::Request &req, teach_play::SpeedOverride::Response &res);
+	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
+
 
 	void UpdateTorque();
 
@@ -94,7 +97,7 @@ private:
 	
 	deque<vector<double>> _play_points;
 	deque<vector<double>> _reapir_points;
-	bool _pause_flag;
+	bool _sensor_flag;
 
 	void FK(vector<double> &robot_pose, vector<double> &axis_deg);
 	Matrix4d GetTFMatrix(double axis_deg, int id);
