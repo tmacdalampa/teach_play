@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+# license removed for brevity
+import rospy
+import random
+from std_msgs.msg import Float32
+
+def talker():
+
+    rospy.init_node('test_laser_publisher_node', anonymous=True)
+    pub = rospy.Publisher('/octopoda/amr0/front_scan', Float32, queue_size=10)
+    rate = rospy.Rate(1) # 1hz
+    while not rospy.is_shutdown():
+        tmp = Float32()
+        A = 0
+        B = 1.5
+        a=random.uniform(A,B)
+
+        tmp.data = round(a,2)
+        
+        rospy.loginfo(tmp)
+        pub.publish(tmp)
+        rate.sleep()
+
+if __name__ == '__main__':
+    try:
+        talker()
+    except rospy.ROSInterruptException:
+        pass
