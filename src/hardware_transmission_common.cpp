@@ -986,7 +986,8 @@ bool HwTmIntf::SetSpeedOverride(double vel_factor)
 {
     try
     {
-        cGrpRef.GroupSetOverride(vel_factor, 1, 1, 0);
+        //cout << "vel_factor = " << vel_factor << endl;
+        cGrpRef.GroupSetOverride(vel_factor, vel_factor, vel_factor, 0);
         return true;
     }
     catch(CMMCException exp)

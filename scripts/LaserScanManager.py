@@ -12,12 +12,12 @@ class LaserScanManager():
     def __init__(self, distance):
 
         self._distance = distance
-        self._value = 'safe'
+        self._value = 'null'
         self._triggerPauseArmService = rospy.ServiceProxy('/speed_override_service', SpeedOverride)
         self._req = SpeedOverrideRequest()
     def callback(self, data):        
 
-        
+        """
         if data.data>distance[1]:
             self._req.vel_factor = 1
             state = 'safe'
@@ -38,27 +38,27 @@ class LaserScanManager():
             rospy.loginfo(state)
 
         self._value = state
-        
-
         """
+
+        
         req = SpeedOverrideRequest()
         laser_range = data.ranges
         
-        res_stop = any(i <= self._distance[0] for i in laser_range)
-        res_safe = all(i >= self._distance[1] for i in laser_range)
+        res_stop = any(i < self._distance[0] for i in laser_range)
+        res_warn = any(i < self._distance[1] for i in laser_range)
+        
         if (res_stop == True) :
             state = 'stop'
-            req.vel = 0
-            #rospy.loginfo('stop')
-        elif(res_safe == True):
-            state = 'safe'
-            req.vel = 1
-            #rospy.loginfo('safe')
-        else:
+            req.vel_factor = 0
+        elif(res_warn == True and res_stop == False):
             state = 'warn'
-            req.vel = 0.5
-            #rospy.loginfo('warn')
-
+            req.vel_factor = 0.5
+        else:
+            state = 'safe'
+            req.vel_factor = 1
+         
+        #rospy.loginfo(state)
+        
         if (state != self._value):
             rospy.loginfo(state)
             
@@ -68,7 +68,7 @@ class LaserScanManager():
                 print("Service call failed: %s"%e)
         
         self._value = state
-        """
+        
     
     def listener(self):
         

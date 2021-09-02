@@ -204,7 +204,8 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
 			ElmoMaster->PVTMotionMove(_play_points, vel, type);
 			GroupState state;
 			while(1)
-			{
+			{	
+				state = ElmoMaster->CheckGroupStatus();
 				if (state == STOP)
 				{
 					ElmoMaster->UnloadTable();
