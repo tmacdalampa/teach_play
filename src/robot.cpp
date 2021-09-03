@@ -196,26 +196,30 @@ bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play
 			switch(req.type)
     		{ 
         		case 0:
-        			type = PVT_NON_BLENDING;       
+        			type = PVT_NON_BLENDING;
+					ElmoMaster->GroupLinearMotionMove(_play_points, vel);
             		break;
         		case 1:
         			type = PVT_BLENDING;
+					ElmoMaster->PVTMotionMove(_play_points, vel, type);
             		break;
     		}
     		
-			ElmoMaster->PVTMotionMove(_play_points, vel, type);
+			
 			GroupState state;
 			while(1)
 			{	
 				state = ElmoMaster->CheckGroupStatus();
 				if (state == STOP)
 				{
-					ElmoMaster->UnloadTable();
+					if (type == PVT_BLENDING)
+					{
+						ElmoMaster->UnloadTable();
+					}
 					break;
 				}
 				ros::spinOnce();
 			}
-			_sensor_flag = false;
 
 			res.message = "Motion End";
 			res.success = true;
@@ -520,9 +524,9 @@ bool Robot::TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::
 		goal_points.push_back(axis_deg3);
 		goal_points.push_back(axis_deg1);
 
+		double vel = 1000000;
 
-
-		ElmoMaster->TestSpeedOverride(goal_points);
+		ElmoMaster->GroupLinearMotionMove(goal_points, vel);
 		GroupState state;
 		
 		while(1)

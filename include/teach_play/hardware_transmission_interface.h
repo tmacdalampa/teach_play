@@ -49,6 +49,8 @@ class HwTmIntf
     void UnloadTable();
     int GetTableIndex();
     bool SetSpeedOverride(double vel_factor);
+    bool GroupLinearMotionMove(deque<vector<double>> &points, double &max_vel);
+
 
   private:
     int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);

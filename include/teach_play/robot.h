@@ -61,7 +61,7 @@ public:
 	
 	bool SpeedOverrideCallback(teach_play::SpeedOverride::Request &req, teach_play::SpeedOverride::Response &res);
 	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
-
+    bool TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
 	void UpdateTorque();
 

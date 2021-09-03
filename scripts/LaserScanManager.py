@@ -52,12 +52,12 @@ class LaserScanManager():
             req.vel_factor = 0
         elif(res_warn == True and res_stop == False):
             state = 'warn'
-            req.vel_factor = 0.5
+            req.vel_factor = 0.1
         else:
             state = 'safe'
             req.vel_factor = 1
          
-        #rospy.loginfo(state)
+        rospy.loginfo(state)
         
         if (state != self._value):
             rospy.loginfo(state)

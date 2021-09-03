@@ -996,17 +996,17 @@ bool HwTmIntf::SetSpeedOverride(double vel_factor)
     }
 }
 
-bool HwTmIntf::TestSpeedOverride(deque<vector<double>> &points)
+bool HwTmIntf::GroupLinearMotionMove(deque<vector<double>> &points, double &max_vel)
 {
     try
     {
-        G_Mparam.eBufferMode = MC_BLENDING_PREVIOUS_MODE;
+        G_Mparam.eBufferMode = MC_BUFFERED_MODE;
         G_Mparam.eCoordSystem = MC_ACS_COORD;
         G_Mparam.eTransitionMode = MC_TM_CORNER_DIST_CV_POLYNOM5_NAXES;
-        G_Mparam.fVelocity = 1000000;         //TODO
-        G_Mparam.fAcceleration = 10000000;    //TODO
-        G_Mparam.fDeceleration = 10000000;    //TODO
-        G_Mparam.fJerk = 200000000;
+        G_Mparam.fVelocity = max_vel;         //TODO
+        G_Mparam.fAcceleration = 10*max_vel;    //TODO
+        G_Mparam.fDeceleration = 10*max_vel;    //TODO
+        G_Mparam.fJerk = 100*max_vel;
 
         cGrpRef.SetDefaultParams(G_Mparam);
         
@@ -1014,7 +1014,7 @@ bool HwTmIntf::TestSpeedOverride(deque<vector<double>> &points)
         
         for(int i = 0; i < point_num; i++)
         {
-            vector<double> goal_position = points.front();
+            vector<double> goal_position = points[i];
             for (int j = 0; j < JNT_NUM; j++)
             {
                 G_Mparam.dEndPoint[j] = goal_position[j];
