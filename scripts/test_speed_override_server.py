@@ -7,8 +7,8 @@ def ServerCallback(req):
     res = SpeedOverrideResponse()
     if (req.vel_factor == 0):
     	res.message = 'set vel factor 0'
-    elif(req.vel_factor == 0.5):
-    	res.message = 'set vel factor 0.5'
+    elif(req.vel_factor == 0.1):
+    	res.message = 'set vel factor 0.1'
     else:
     	res.message = 'set vel factor 1'
     res.success = True
