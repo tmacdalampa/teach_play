@@ -49,6 +49,8 @@ Robot::Robot(ros::NodeHandle *nh)
 	//laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
 	speed_override_service = nh->advertiseService("/speed_override_service", &Robot::SpeedOverrideCallback, this);
 
+	test_pts_service = nh->advertiseService("/test_pts_service", &Robot::TestPtsCallback, this);
+
     torque_mode_ready_flag = false;
 	
 	_sensor_flag = false;
@@ -496,4 +498,48 @@ bool Robot::SpeedOverrideCallback(teach_play::SpeedOverride::Request &req, teach
 	}
 	res.success = true;
 	return true;
+}
+
+bool Robot::TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
+	{
+		res.success = false;
+		res.message = "DriverMode InCorrect";
+	}
+	else
+	{
+		vector<double> axis_deg1 = {529392, 475362, -1767978, -4064430, 19578637, 14497598};
+		vector<double> axis_deg2 = {539392, 485362, -1867978, -4164430, 19678637, 19497598};
+		vector<double> axis_deg3 = {549392, 495362, -1967978, -4264430, 19778637, 25497598};
+
+		deque<vector<double>> goal_points;
+		goal_points.clear();
+		goal_points.push_back(axis_deg1);
+		goal_points.push_back(axis_deg2);
+		goal_points.push_back(axis_deg3);
+		goal_points.push_back(axis_deg1);
+
+
+
+		ElmoMaster->TestSpeedOverride(goal_points);
+		GroupState state;
+		
+		while(1)
+		{	
+			state = ElmoMaster->CheckGroupStatus();
+			if (state == STOP)
+			{
+				break;
+			}
+			ros::spinOnce();
+		}
+		
+
+		res.message = "Motion End";
+		res.success = true;
+	
+	}
+
+    return true;
 }

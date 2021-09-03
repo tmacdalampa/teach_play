@@ -44,6 +44,7 @@ public:
 	ros::ServiceServer go_straight_service;
 	ros::ServiceServer clear_pts_service;
 	ros::ServiceServer speed_override_service;
+	ros::ServiceServer test_pts_service;
 	ros::Subscriber laser_sub;
 	//ros::Rate rate(10);
 

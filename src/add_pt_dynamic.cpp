@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     double max_vel = 100000;
     deque<vector<double>> play_points;
     MotionType type = PVT_NON_BLENDING;
-    vector<double> axis_deg1 = {529392, 475362, -1767978, -4064430, 19578637, 14497598};
+    vector<double> axis_deg1 = {529392, 475362, -1767978, -4064430, 19578637, 14497598}; //straight points
     //vector<double> axis_deg1 = {0, 0, 0, 0, 0, 0};
     int point_num = 16;
 
@@ -50,7 +50,6 @@ int main(int argc, char** argv)
 
     play_points.clear();
     axis_deg1.clear();
-  
   
   
 

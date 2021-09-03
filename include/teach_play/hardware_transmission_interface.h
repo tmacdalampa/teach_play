@@ -67,6 +67,8 @@ class HwTmIntf
     OPM402 eMode;
     ELMO_DOUBLE dTable[NC_PVT_ECAM_MAX_ARRAY_SIZE];
 
+    MMC_MOTIONPARAMS_GROUP G_Mparam;
+
     MC_PATH_REF handle;
 
 

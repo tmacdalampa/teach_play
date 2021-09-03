@@ -995,3 +995,37 @@ bool HwTmIntf::SetSpeedOverride(double vel_factor)
         Exception(exp);
     }
 }
+
+bool HwTmIntf::TestSpeedOverride(deque<vector<double>> &points)
+{
+    try
+    {
+        G_Mparam.eBufferMode = MC_BLENDING_PREVIOUS_MODE;
+        G_Mparam.eCoordSystem = MC_ACS_COORD;
+        G_Mparam.eTransitionMode = MC_TM_CORNER_DIST_CV_POLYNOM5_NAXES;
+        G_Mparam.fVelocity = 1000000;         //TODO
+        G_Mparam.fAcceleration = 10000000;    //TODO
+        G_Mparam.fDeceleration = 10000000;    //TODO
+        G_Mparam.fJerk = 200000000;
+
+        cGrpRef.SetDefaultParams(G_Mparam);
+        
+        int point_num = points.size();
+        
+        for(int i = 0; i < point_num; i++)
+        {
+            vector<double> goal_position = points.front();
+            for (int j = 0; j < JNT_NUM; j++)
+            {
+                G_Mparam.dEndPoint[j] = goal_position[j];
+            }
+
+            cGrpRef.MoveLinearAbsolute(G_Mparam.fVelocity, G_Mparam.dEndPoint, G_Mparam.fAcceleration, G_Mparam.fDeceleration, G_Mparam.fJerk, G_Mparam.eBufferMode);
+        }
+        return true;
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+    }
+}
