@@ -49,7 +49,10 @@ Robot::Robot(ros::NodeHandle *nh)
 	//laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
 	speed_override_service = nh->advertiseService("/speed_override_service", &Robot::SpeedOverrideCallback, this);
 
-	test_pts_service = nh->advertiseService("/test_pts_service", &Robot::TestPtsCallback, this);
+	//test_pts_service = nh->advertiseService(nh, "/test_pts_service", &Robot::TestPtsCallback, this);
+
+	Server server(*nh, "arm_controller/follow_joint_trajectory", boost::bind(&Robot::Execute, this, _1, &server), false); 
+  	server.start();
 
     torque_mode_ready_flag = false;
 	
@@ -546,4 +549,10 @@ bool Robot::TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::
 	}
 
     return true;
+}
+
+void Robot::Execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server* as)
+{
+	ROS_INFO("Recieve action successful!");
+  	as->setSucceeded();
 }

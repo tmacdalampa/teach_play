@@ -8,6 +8,9 @@
 #include <geometry_msgs/Twist.h>
 #include <teach_play/MotionPlanning.h>
 #include <teach_play/SpeedOverride.h>
+#include <actionlib/server/simple_action_server.h>
+#include <control_msgs/FollowJointTrajectoryAction.h>
+
 
 #include "teach_play/hardware_transmission_interface.h"
 
@@ -30,6 +33,8 @@
 using namespace std;
 using namespace Eigen;
 
+
+
 class HwTmIntf;
 class Robot
 {
@@ -44,8 +49,11 @@ public:
 	ros::ServiceServer go_straight_service;
 	ros::ServiceServer clear_pts_service;
 	ros::ServiceServer speed_override_service;
-	ros::ServiceServer test_pts_service;
+	//ros::ServiceServer test_pts_service;
 	ros::Subscriber laser_sub;
+	typedef actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction> Server;
+
+
 	//ros::Rate rate(10);
 
 
@@ -62,8 +70,9 @@ public:
 	bool SpeedOverrideCallback(teach_play::SpeedOverride::Request &req, teach_play::SpeedOverride::Response &res);
 	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
     bool TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-
 	void UpdateTorque();
+
+	void Execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server* as);
 
 	bool torque_mode_ready_flag;
 

@@ -1,0 +1,9 @@
+#goal definition
+bool type
+float32 vel
+---
+#result
+bool success
+---
+#feedback
+int16 point_num
