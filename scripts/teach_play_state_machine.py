@@ -114,7 +114,7 @@ class StartMotion(smach.State):
 			
 		else:
 			req = MotionPlanningRequest()
-			req.vel = self._vel + 5*i
+			req.vel = self._vel + 5*self._motion_cnts
 			req.type = False
 
 		res = self.triggerStartMotion_service(req)
@@ -122,7 +122,7 @@ class StartMotion(smach.State):
 		self._motion_cnts = self._motion_cnts + 1
 			
 
-		if (res.success == True and self._motion_cnts > 3):
+		if (res.success == True and self._motion_cnts > 5):
 			return 'succeed'
 		elif res.success == True:
 			return 'continue'
