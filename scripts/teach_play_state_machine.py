@@ -83,34 +83,49 @@ class RememberPoint(smach.State):
 class StartMotion(smach.State):
 	
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['succeed','failed'])
+		smach.State.__init__(self, outcomes=['succeed','failed', 'continue'])
 		rospy.wait_for_service('/play_pts_service')
 		self.triggerStartMotion_service = rospy.ServiceProxy('/play_pts_service', MotionPlanning)
-	
-	def execute(self, userdata):
-		vel = input("please input maximum velocity percentage:")
-		
-		while(vel <= 0 or vel > 100):
-			vel = input("please input maximum velocity percentage again:")
-		
-		req = MotionPlanningRequest()
-		req.vel = vel
+		self._motion_cnts = 1
+		self._vel = 10
+		self._motion_type = 'n'
 
-		motion_type = raw_input("please input motion type 'b' blending move or 'n' non blending move:")
+	def execute(self, userdata):
+		if (self._motion_cnts == 1):
+
+			self._vel = input("please input maximum velocity percentage:")
+			while(self._vel <= 0 or self._vel > 100):
+				self._vel = input("please input maximum velocity percentage again:")
 		
-		while(motion_type != 'b' and motion_type != 'n'):
-			vel = input("please input motion type again:")
+			req = MotionPlanningRequest()
+			req.vel = self._vel
+
+			self._motion_type = raw_input("please input motion type 'b' blending move or 'n' non blending move:")
+			while(self._motion_type != 'b' and self._motion_type != 'n'):
+				self._motion_type = input("please input motion type again:")
 		
-		if motion_type == 'b':
-			req.type = True
+			if self._motion_type == 'b':
+				req.type = True
+			else:
+				req.type = False
+
+			#res = self.triggerStartMotion_service(req)
+			#print(res)
+			
 		else:
+			req = MotionPlanningRequest()
+			req.vel = self._vel + 5*i
 			req.type = False
 
 		res = self.triggerStartMotion_service(req)
 		print(res)
+		self._motion_cnts = self._motion_cnts + 1
+			
 
-		if res.success == True:
+		if (res.success == True and self._motion_cnts > 3):
 			return 'succeed'
+		elif res.success == True:
+			return 'continue'
 		else:
 			return 'failed'
 
@@ -142,7 +157,8 @@ def main():
 		
 		smach.StateMachine.add('StartMotion', StartMotion(),
 								transitions={'succeed':'SelectMode',
-											'failed':'ended'})
+											'failed':'ended',
+											'continue':'StartMotion'})
 
 
 		
