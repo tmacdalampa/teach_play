@@ -123,6 +123,7 @@ class StartMotion(smach.State):
 			
 
 		if (res.success == True and self._motion_cnts > 5):
+			self._motion_cnts = 1
 			return 'succeed'
 		elif res.success == True:
 			return 'continue'
