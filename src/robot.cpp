@@ -47,11 +47,11 @@ Robot::Robot(ros::NodeHandle *nh)
     go_straight_service = nh->advertiseService("/go_straight_service", &Robot::GoStraightCallback, this);
     clear_pts_service = nh->advertiseService("/clear_pts_service", &Robot::ClearPtsCallback, this);
 	//laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
-	speed_override_service = nh->advertiseService("/speed_override_service", &Robot::SpeedOverrideCallback, this);
+	laser_manager_service = nh->advertiseService("/slaser_manager_service", &Robot::LaserManagerCallback, this);
 
 	//test_pts_service = nh->advertiseService(nh, "/test_pts_service", &Robot::TestPtsCallback, this);
 
-	Server server(*nh, "arm_controller/follow_joint_trajectory", boost::bind(&Robot::Execute, this, _1, &server), false); 
+	Server server(*nh, "teach_play/move_linear_abs", boost::bind(&Robot::Execute, this, _1, &server), false); 
   	server.start();
 
     torque_mode_ready_flag = false;
@@ -60,6 +60,8 @@ Robot::Robot(ros::NodeHandle *nh)
 
 	_play_points.clear();
 	_reapir_points.clear();
+
+	_current_zone = "safe";
 
     for(int i = 0; i<JNT_NUM; i++)
     {
@@ -495,11 +497,12 @@ void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 }
 */
 
-bool Robot::SpeedOverrideCallback(teach_play::SpeedOverride::Request &req, teach_play::SpeedOverride::Response &res)
+bool Robot::LaserManagerCallback(teach_play::LaserManager::Request &req, teach_play::LaserManager::Response &res)
 {
-	res.message = "called speed_override_service";
+	
 	if (_sensor_flag == true)
 	{
+		_current_zone = req.zone;
 		ElmoMaster->SetSpeedOverride(req.vel_factor);
 		res.message = "SpeedOverride is set";
 	}
@@ -551,8 +554,64 @@ bool Robot::TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::
     return true;
 }
 
-void Robot::Execute(const control_msgs::FollowJointTrajectoryGoalConstPtr& goal, Server* as)
+void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal, Server* as)
 {
 	ROS_INFO("Recieve action successful!");
-  	as->setSucceeded();
+  	
+  	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
+	{
+		_result.success = false;
+		_result.message = "driver mode incorrect";
+		as->setPreempted(_result);
+	}
+	else
+	{	
+		if (_play_points.empty() != true)
+		{
+			double vel = _max_velocity*0.01*goal->vel;
+			MotionType type;
+
+			switch(goal->type)
+    		{ 
+        		case 0:
+        			type = PVT_NON_BLENDING;
+					ElmoMaster->GroupLinearMotionMove(_play_points, vel);
+            		break;
+        		case 1:
+        			type = PVT_BLENDING;
+					ElmoMaster->PVTMotionMove(_play_points, vel, type);
+            		break;
+    		}
+    		
+			ros::Rate rate(10);
+			GroupState state;
+			while(1)
+			{	
+				state = ElmoMaster->CheckGroupStatus();
+				if (state == STOP)
+				{
+					if (type == PVT_BLENDING)
+					{
+						ElmoMaster->UnloadTable();
+					}
+					break;
+				}
+
+				_feedback.point_num = ElmoMaster->PointIndexGetter();
+				_feedback.zone = _current_zone;
+				as->publishFeedback(_feedback);
+				ros::spinOnce();
+				rate.sleep();
+			}
+			_result.success = true;
+			_result.message = "motion succeed";
+			as->setSucceeded(_result);
+		}
+		else
+		{
+			_result.success = false;
+			_result.message = "motion failed";
+			as->setPreempted(_result);
+		}
+	}
 }

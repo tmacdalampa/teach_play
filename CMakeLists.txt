@@ -61,7 +61,7 @@ set(CMAKE_C_FLAGS "-no-pie")
  add_service_files(
    FILES
    MotionPlanning.srv
-   SpeedOverride.srv
+   LaserManager.srv
 #   Service2.srv
  )
 

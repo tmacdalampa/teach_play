@@ -4,6 +4,8 @@ float32 vel
 ---
 #result
 bool success
+string message
 ---
 #feedback
 int16 point_num
+string zone

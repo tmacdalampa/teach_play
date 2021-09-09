@@ -35,6 +35,7 @@ void Exception(CMMCException exp)
 HwTmIntf::HwTmIntf()
 {    
     InitConnection();
+    _play_points_index = 0;
     //int tmp = cGrpRef.GetPVTTableIndex(handle);
     //cout << "current talbe index" << tmp << endl;
     
@@ -1014,6 +1015,7 @@ bool HwTmIntf::GroupLinearMotionMove(deque<vector<double>> &points, double &max_
         
         for(int i = 0; i < point_num; i++)
         {
+            _play_points_index = i + 1;
             vector<double> goal_position = points[i];
             for (int j = 0; j < JNT_NUM; j++)
             {
@@ -1028,4 +1030,10 @@ bool HwTmIntf::GroupLinearMotionMove(deque<vector<double>> &points, double &max_
     {
         Exception(exp);
     }
+}
+
+int HwTmIntf::PointIndexGetter()
+{
+    int index = _play_points_index;
+    return index;
 }

@@ -50,6 +50,8 @@ class HwTmIntf
     int GetTableIndex();
     bool SetSpeedOverride(double vel_factor);
     bool GroupLinearMotionMove(deque<vector<double>> &points, double &max_vel);
+    int PointIndexGetter();
+
 
 
   private:
@@ -57,6 +59,7 @@ class HwTmIntf
     int MotionPlanningBlending(deque<vector<double>> &play_points, double &max_vel);
     int MotionPlanningGoStraight(deque<vector<double>> &play_points, double &max_vel);
 
+    int _play_points_index;
     bool _res;
     //variable related with ELMO ethercat master
     MMC_CONNECT_HNDL gConnHndl ;
