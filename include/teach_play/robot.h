@@ -27,6 +27,7 @@
 #define PI 3.14157
 #define DEG_PER_REV 360
 #define DEG2RAD 0.017453
+#define RAD2DEG 57.2967
 #define g 9.81
 #define HD_eff 0.7
 
@@ -52,7 +53,9 @@ public:
 	//ros::ServiceServer test_pts_service;
 	//ros::Subscriber laser_sub;
 
-	typedef actionlib::SimpleActionServer<teach_play::MoveLinearAbsAction> Server;
+	//typedef actionlib::SimpleActionServer<teach_play::MoveLinearAbsAction> Server;
+
+	
 
 
 
@@ -75,7 +78,7 @@ public:
     bool TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	void UpdateTorque();
 
-	void Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal, Server* as);
+	//void Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal, Server* as);
 
 	teach_play::MoveLinearAbsFeedback _feedback;
 	teach_play::MoveLinearAbsResult _result;
@@ -84,7 +87,10 @@ public:
 
 
 
+
 private:
+	actionlib::SimpleActionServer<teach_play::MoveLinearAbsAction> as;
+	void Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal);
 	//parameters from yaml file
 	vector<int> _gear_ratios;
 	vector<int> _zero_points; //unit cnts

@@ -1,7 +1,8 @@
 #include "teach_play/robot.h"
 
 
-Robot::Robot(ros::NodeHandle *nh)
+Robot::Robot(ros::NodeHandle *nh):
+	as(*nh, "/move_linear_abs", boost::bind(&Robot::Execute, this, _1), false)
 {	
 	ElmoMaster = new HwTmIntf;
 
@@ -47,12 +48,16 @@ Robot::Robot(ros::NodeHandle *nh)
     go_straight_service = nh->advertiseService("/go_straight_service", &Robot::GoStraightCallback, this);
     clear_pts_service = nh->advertiseService("/clear_pts_service", &Robot::ClearPtsCallback, this);
 	//laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
-	laser_manager_service = nh->advertiseService("/slaser_manager_service", &Robot::LaserManagerCallback, this);
+	laser_manager_service = nh->advertiseService("/laser_manager_service", &Robot::LaserManagerCallback, this);
 
 	//test_pts_service = nh->advertiseService(nh, "/test_pts_service", &Robot::TestPtsCallback, this);
 
-	Server server(*nh, "teach_play/move_linear_abs", boost::bind(&Robot::Execute, this, _1, &server), false); 
-  	server.start();
+	//Server as(*nh, "/move_linear_abs", boost::bind(&Robot::Execute, this, _1), false); 
+	
+
+  	cout << "hello" << endl;
+	as.start();
+	cout << "hi" << endl;
 
     torque_mode_ready_flag = false;
 	
@@ -278,8 +283,12 @@ void Robot::FK(vector<double> &robot_pose, vector<double> &axis_deg)
 	_T45 = GetTFMatrix(axis_deg[4], 5);
 	_T56 = GetTFMatrix(axis_deg[5], 6);
 	_T06 = _T01*_T12*_T23*_T34*_T45*_T56;
-
-	robot_pose = {_T06(0,3),_T06(1,3),_T06(2,3),0,0,0};
+	robot_pose[0] = _T06(0,3);
+	robot_pose[1] = _T06(1,3);
+	robot_pose[2] = _T06(2,3);
+	robot_pose[4] = RAD2DEG * atan2(-_T06(2, 0), sqrt(_T06(0, 0) * _T06(0, 0) + _T06(1, 0) * _T06(1, 0))); //pitch
+    robot_pose[3] = RAD2DEG * atan2(_T06(2, 1) / cos(robot_pose[4]), _T06(2, 2) / cos(robot_pose[4])); //roll
+    robot_pose[5] = RAD2DEG * atan2(_T06(1, 0) / cos(robot_pose[4]), _T06(0, 0) / cos(robot_pose[4])); //yaw
 }
 
 void Robot::UpdateTorque()
@@ -554,7 +563,7 @@ bool Robot::TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::
     return true;
 }
 
-void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal, Server* as)
+void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 {
 	ROS_INFO("Recieve action successful!");
   	
@@ -562,7 +571,7 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal, Server* a
 	{
 		_result.success = false;
 		_result.message = "driver mode incorrect";
-		as->setPreempted(_result);
+		as.setPreempted(_result);
 	}
 	else
 	{	
@@ -599,19 +608,19 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal, Server* a
 
 				_feedback.point_num = ElmoMaster->PointIndexGetter();
 				_feedback.zone = _current_zone;
-				as->publishFeedback(_feedback);
+				as.publishFeedback(_feedback);
 				ros::spinOnce();
 				rate.sleep();
 			}
 			_result.success = true;
 			_result.message = "motion succeed";
-			as->setSucceeded(_result);
+			as.setSucceeded(_result);
 		}
 		else
 		{
 			_result.success = false;
 			_result.message = "motion failed";
-			as->setPreempted(_result);
+			as.setPreempted(_result);
 		}
 	}
 }

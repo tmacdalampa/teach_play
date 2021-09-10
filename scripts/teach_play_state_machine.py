@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 import sys
 import time
+import roslib
 import rospy
 import smach
 import smach_ros
+import actionlib
 from std_srvs.srv import Trigger, SetBool, SetBoolRequest, TriggerRequest, SetBoolResponse, TriggerResponse
 from teach_play.srv import MotionPlanning, MotionPlanningRequest
+from teach_play.msg import MoveLinearAbsAction, MoveLinearAbsGoal, MoveLinearAbsResult
 
 class SelectMode(smach.State):
 	
@@ -18,7 +21,7 @@ class SelectMode(smach.State):
 		self.triggerSelectMode_service = rospy.ServiceProxy('/select_mode_service', SetBool)
 		self.triggerGoStraight_service = rospy.ServiceProxy('/go_straight_service', Trigger)
 		self.triggerClearPts_service = rospy.ServiceProxy('/clear_pts_service', Trigger)
-
+		print('initial state SelectMode')
 
 	
 	def execute(self, userdata):
@@ -65,6 +68,8 @@ class RememberPoint(smach.State):
 		smach.State.__init__(self, outcomes=['continue','done', 'failed'])
 		rospy.wait_for_service('/remember_pts_service')
 		self.triggerRememberPoint_service = rospy.ServiceProxy('/remember_pts_service', Trigger)
+		print('initial state Remember Point')
+
 	
 	def execute(self, userdata):
 		pt = raw_input("please input 'p' when you want to remember this point and 'last' when you finish last point:")
@@ -84,30 +89,34 @@ class StartMotion(smach.State):
 	
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['succeed','failed'])
-		rospy.wait_for_service('/play_pts_service')
-		self.triggerStartMotion_service = rospy.ServiceProxy('/play_pts_service', MotionPlanning)
+		#rospy.wait_for_service('/play_pts_service')
+		#self.triggerStartMotion_service = rospy.ServiceProxy('/play_pts_service', MotionPlanning)
+
+		self.client = actionlib.SimpleActionClient('/move_linear_abs', MoveLinearAbsAction)
+		self.client.wait_for_server()
+		print('initial state StartMotion')
+
 	
 	def execute(self, userdata):
-		vel = input("please input maximum velocity percentage:")
+		goal = MoveLinearAbsGoal()
+		goal.vel = input("please input maximum velocity percentage:")
 		
-		while(vel <= 0 or vel > 100):
-			vel = input("please input maximum velocity percentage again:")
-		
-		req = MotionPlanningRequest()
-		req.vel = vel
+		while(goal.vel <= 0 or goal.vel > 100):
+			goal.vel = input("please input maximum velocity percentage again:")
 
 		motion_type = raw_input("please input motion type 'b' blending move or 'n' non blending move:")
 		
 		while(motion_type != 'b' and motion_type != 'n'):
-			vel = input("please input motion type again:")
+			motion_type = input("please input motion type again:")
 		
 		if motion_type == 'b':
-			req.type = True
+			goal.type = True
 		else:
-			req.type = False
+			goal.type = False
 
-		res = self.triggerStartMotion_service(req)
-		print(res)
+		self.client.send_goal(goal)
+		self.client.wait_for_result()
+		res = self.client.get_result()
 
 		if res.success == True:
 			return 'succeed'
