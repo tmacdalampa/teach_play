@@ -31,10 +31,11 @@ class HwTmIntf
     ~HwTmIntf();
 
     void InitConnection();
-    bool EnableAll(bool op_mode);
-    bool DisableAll();
+    bool EnableDrivers();
+    bool EnableGroup();
+    bool DisableDrivers();
     bool DisableGroup();
-    bool ResetAll(bool op_mode);
+    bool ResetAll();
     bool ChangeOpMode(bool op_mode, bool &torque_mode_ready_flag);
     bool SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
     bool ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);

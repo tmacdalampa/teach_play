@@ -11,6 +11,7 @@ using namespace std;
 using namespace Eigen;
  
 #define DEG2RAD 0.017453
+#define RAD2DEG 57.2967
 #define JNT_NUM 6
 
 Matrix4d GetTFMatrix(double axis_deg, int id)
@@ -134,7 +135,31 @@ void GravityComp(array<double, JNT_NUM> &g_torque, array<double, JNT_NUM> &axis_
 
 int main(int argc, char** argv)
 {
+	array<double, 6> robot_pose;
+	array<double, 6> axis_deg = {0, 90, 90, 0, 90, 0};
 	ros::init(argc, argv, "eigen_test");
+	Matrix4d _T01, _T12, _T23, _T34, _T45, _T56 , _T06;
+	_T01 = GetTFMatrix(axis_deg[0], 1);
+	_T12 = GetTFMatrix(axis_deg[1], 2); 
+	_T23 = GetTFMatrix(axis_deg[2], 3); 
+	_T34 = GetTFMatrix(axis_deg[3], 4);
+	_T45 = GetTFMatrix(axis_deg[4], 5);
+	_T56 = GetTFMatrix(axis_deg[5], 6);
+	_T06 = _T01*_T12*_T23*_T34*_T45*_T56;
+	robot_pose[0] = _T06(0,3);
+	robot_pose[1] = _T06(1,3);
+	robot_pose[2] = _T06(2,3);
+	robot_pose[4] = RAD2DEG * atan2(-_T06(2, 0), sqrt(_T06(0, 0) * _T06(0, 0) + _T06(1, 0) * _T06(1, 0))); //pitch
+    robot_pose[3] = RAD2DEG * atan2(_T06(2, 1) / cos(robot_pose[4]), _T06(2, 2) / cos(robot_pose[4])); //roll
+    robot_pose[5] = RAD2DEG * atan2(_T06(1, 0) / cos(robot_pose[4]), _T06(0, 0) / cos(robot_pose[4])); //yaw
+    cout << "x = " << robot_pose[0]
+    	<<  ", y = " << robot_pose[1]
+    	<<  ", z = " << robot_pose[2]
+    	<<  ", roll = " << robot_pose[3]
+    	<<  ", pitch = " << robot_pose[4]
+    	<<  ", yaw = " << robot_pose[5] << endl;
+
+    #if 0
   array<double, JNT_NUM> g_torque = {0,0,0,0,0,0};
   vector<double> axis_deg1 = {0, 0, 0, 0, 0, 0};
   vector<double> axis_deg2 = {1000, 1000, 1000, 1000, 1000, 1000};
@@ -183,7 +208,7 @@ int main(int argc, char** argv)
             //cout << "this path time interval = " << max_path/max_vel << endl;
         }
     }
-
+	#endif
     #if 0
 for(int i = 0; i<point_num+1; i++)
 {
@@ -201,7 +226,7 @@ for(int i = 0; i<point_num+1; i++)
        << dTable[13*i+11] << " , "
        << dTable[13*i+12] << " , " << endl;
 }
-#endif
+
     
     MatrixXd Axis1_B_Matrix(point_num-1, 1);
     MatrixXd Axis2_B_Matrix(point_num-1, 1);
@@ -281,7 +306,7 @@ for(int i = 0; i<point_num+1; i++)
         dTable[13*(i+1) + 10] = Axis5_Vel_Matrix(i,0);
         dTable[13*(i+1) + 12] = Axis6_Vel_Matrix(i,0);
     }
-
+#endif
     #if 0
 for(int i = 0; i<point_num+1; i++)
 {

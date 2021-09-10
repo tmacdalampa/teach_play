@@ -35,11 +35,13 @@ void Exception(CMMCException exp)
 HwTmIntf::HwTmIntf()
 {    
     InitConnection();
-    _play_points_index = 0;
-    //int tmp = cGrpRef.GetPVTTableIndex(handle);
-    //cout << "current talbe index" << tmp << endl;
     
-    if (ResetAll(true) != true)
+    if (ResetAll() != true)
+    {
+        exit(0);
+    }
+
+    if(EnableDrivers() != true)
     {
         exit(0);
     }
@@ -47,15 +49,10 @@ HwTmIntf::HwTmIntf()
 
 HwTmIntf::~HwTmIntf()
 {
-    _res = DisableAll();
-
-    DriverMode mode = GetDriverMode();
-
-    if (mode == CSP)
-    {
-        _res = DisableGroup();
-    }
     
+    DisableGroup();
+    DisableDrivers();
+        
 
 }
 
@@ -90,57 +87,40 @@ void HwTmIntf::InitConnection()
 
 bool HwTmIntf::SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag)
 {
-    OPM402 eMode_now = cAxis[5].GetOpMode();
+    DriverMode driver_mode = GetDriverMode();
     if (op_mode == true)
     {
-        if (eMode_now != OPM402_CYCLIC_SYNC_TORQUE_MODE)
+        if(driver_mode != DriverMode::CST)        
         {
             if (DisableGroup() != true) return false; 
             if (ChangeOpMode(op_mode, torque_mode_ready_flag) != true) return false;
         }
-        
-        if ( EnableAll(op_mode)!= true) return false;
-        
-        if (cAxis[5].GetOpMode() == OPM402_CYCLIC_SYNC_TORQUE_MODE)
-        {
-            torque_mode_ready_flag = true;
-        }
     }
     else if (op_mode == false)
     {
-        if (eMode_now != OPM402_CYCLIC_SYNC_POSITION_MODE)
+        if(driver_mode != DriverMode::CSP)        
         {
             if (ChangeOpMode(op_mode, torque_mode_ready_flag) != true) return false;
         }
-        if (EnableAll(op_mode) != true) return false;
+        if (EnableGroup() != true) return false;
     }
 
     return true;
 }
 
-bool HwTmIntf::EnableAll(bool op_mode)
+bool HwTmIntf::EnableDrivers()
 {
     try
     { 
         for(int i = 0; i < JNT_NUM; i++)
         {
-            //ROS_INFO("axis %d status is %d (STAND_STILL) and %d (DISCRETE_MOTION)", id, (cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK), (cAxis[id].ReadStatus()& NC_AXIS_DISCRETE_MOTION_MASK));
-	    
             if (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
             {
                 cAxis[i].PowerOn();
                 while (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
             }
-            //ROS_INFO("axis %d status is %d (STAND_STILL) and %d (DISCRETE_MOTION)", id, (cAxis[id].ReadStatus()& NC_AXIS_STAND_STILL_MASK), (cAxis[id].ReadStatus()& NC_AXIS_DISCRETE_MOTION_MASK));
         }
 
-        //ROS_INFO("EnableAll Done");
-        cout << "enable success" <<endl;
-        if (op_mode == false)
-        {
-            cGrpRef.GroupEnable();
-            while (!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
-        }
         return true;
 
     }
@@ -152,26 +132,34 @@ bool HwTmIntf::EnableAll(bool op_mode)
     }
 }
 
-bool HwTmIntf::DisableAll()
+bool HwTmIntf::EnableGroup()
+{
+    try
+    {
+        cGrpRef.GroupEnable();
+        while (!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
+        return true;
+    }
+    catch(CMMCException exp)
+    {
+        Exception(exp);
+        return false;
+    }
+}
+
+bool HwTmIntf::DisableDrivers()
 {
     try
     {
         for(int i = 0; i < JNT_NUM; i++)
         {
-            //if (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
-            //{
-            //    cAxis[i].Stop(); //if it is still moving, start first
-            //    while (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
-            //}
 		    if (!(cAxis[i].ReadStatus()& NC_AXIS_DISABLED_MASK))
             {
                 cAxis[i].PowerOff();
                 while (!(cAxis[i].ReadStatus()& NC_AXIS_DISABLED_MASK));
             }
         }
-        cout << "disable done" << endl;
         return true;
-
     }
 	catch(CMMCException exp)
   	{
@@ -190,19 +178,16 @@ bool HwTmIntf::DisableGroup()
             cGrpRef.GroupDisable();
         }
         while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
-        
-        cout << "disable group success" << endl;
         return true;
     }
     catch(CMMCException exp)
     {
-        cout << "disable group failed" << endl;
         Exception(exp);
         return false;
     }
 }
 
-bool HwTmIntf::ResetAll(bool op_mode)
+bool HwTmIntf::ResetAll()
 {
 	try
     {
@@ -214,16 +199,16 @@ bool HwTmIntf::ResetAll(bool op_mode)
                 while( !(cAxis[i].ReadStatus() & NC_AXIS_DISABLED_MASK));
             }
         }
-        if(op_mode == false)
-		{
-            if (cGrpRef.ReadStatus() & NC_GROUP_ERROR_STOP_MASK)
-            {
-                cGrpRef.GroupReset();
-                while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
-            }
+
+		
+        if (cGrpRef.ReadStatus() & NC_GROUP_ERROR_STOP_MASK)
+        {
+            cGrpRef.GroupReset();
+            while (!(cGrpRef.ReadStatus() & NC_GROUP_DISABLED_MASK));
         }
-        //ROS_INFO("ResetAll Done");
-        std::cout << "reset all done" <<std::endl;
+        
+        
+        cout << "reset all done" << endl;
         return true;
     }
 
