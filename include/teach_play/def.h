@@ -15,9 +15,8 @@ enum DriverMode
 
 enum MotionType
 {
-	PVT_NON_BLENDING = 0,
-	PVT_BLENDING = 1,
-	PVT_GO_STRAIGHT = 2
+	GO_POINTS = 0,
+	GO_STRAIGHT = 1
 };
 
 enum DIState

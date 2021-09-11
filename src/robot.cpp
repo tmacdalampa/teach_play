@@ -44,27 +44,23 @@ Robot::Robot(ros::NodeHandle *nh):
 
     control_mode_service = nh->advertiseService("/select_mode_service", &Robot::SelectModeCallback, this);
     remember_pts_service = nh->advertiseService("/remember_pts_service", &Robot::RememberPtsCallback, this);
-    play_pts_service = nh->advertiseService("/play_pts_service", &Robot::PlayPtsCallback, this);
-    go_straight_service = nh->advertiseService("/go_straight_service", &Robot::GoStraightCallback, this);
     clear_pts_service = nh->advertiseService("/clear_pts_service", &Robot::ClearPtsCallback, this);
-	//laser_sub = nh->subscribe("/octopoda/amr0/front_scan", 100, &Robot::LaserScanCallback, this);
 	laser_manager_service = nh->advertiseService("/laser_manager_service", &Robot::LaserManagerCallback, this);
 
-	//test_pts_service = nh->advertiseService(nh, "/test_pts_service", &Robot::TestPtsCallback, this);
-
-	//Server as(*nh, "/move_linear_abs", boost::bind(&Robot::Execute, this, _1), false); 
+	_straight_position = {0, 90, 90, 0, 90, 0};
+	for(int i =0; i<JNT_NUM;i++)
+	{
+		_straight_points.push_back(_zero_points[i] + (_straight_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+	}
+	_straight_queue.push_back(_straight_points);
 	
-
-  	cout << "hello" << endl;
 	as.start();
-	cout << "hi" << endl;
 
     torque_mode_ready_flag = false;
 	
 	_sensor_flag = false;
 
 	_play_points.clear();
-	_reapir_points.clear();
 
 	_current_zone = "safe";
 
@@ -83,13 +79,14 @@ Robot::Robot(ros::NodeHandle *nh):
 
 Robot::~Robot()
 {
+	_straight_points.clear();
+	_straight_queue.clear();
 	_axis_deg.clear();
 	_robot_pose.clear();
 	_enc_cnts.clear();
 	_axis_torque_cmd.clear();
 	_vel_dir.clear();
 	_play_points.clear();
-	_reapir_points.clear();
 	delete ElmoMaster;
 }
 
@@ -153,26 +150,6 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
     return true;
 }
 
-/*
-bool Robot::PauseArmCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
-{	
-	if (req.data == true)
-	{
-		res.message = "pause_arm_flag = true"; //set _pause_flag = true
-		_pause_flag = true;
-	}
-	else
-	{
-		res.message = "pause_arm_flag = false";
-		_pause_flag = false;
-	}
-	
-	res.success = true;
-	
-	
-    return true;
-}
-*/
 
 bool Robot::RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
@@ -189,60 +166,7 @@ bool Robot::RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigg
     return true;
 }
 
-bool Robot::PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res)
-{
-	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
-	{
-		res.success = false;
-		res.message = "DriverMode InCorrect";
-	}
-	else
-	{	
-		if (_play_points.empty() != true)
-		{
-			double vel = _max_velocity*0.01*req.vel;
-			MotionType type;
 
-			switch(req.type)
-    		{ 
-        		case 0:
-        			type = PVT_NON_BLENDING;
-					ElmoMaster->GroupLinearMotionMove(_play_points, vel);
-            		break;
-        		case 1:
-        			type = PVT_BLENDING;
-					ElmoMaster->PVTMotionMove(_play_points, vel, type);
-            		break;
-    		}
-    		
-			
-			GroupState state;
-			while(1)
-			{	
-				state = ElmoMaster->CheckGroupStatus();
-				if (state == STOP)
-				{
-					if (type == PVT_BLENDING)
-					{
-						ElmoMaster->UnloadTable();
-					}
-					break;
-				}
-				ros::spinOnce();
-			}
-
-			res.message = "Motion End";
-			res.success = true;
-	
-		}
-		else
-		{
-			res.message = "No Points:";
-			res.success = false;
-		}
-	}
-	return true;
-}
 
 Matrix4d Robot::GetTFMatrix(double axis_deg, int id)
 {
@@ -423,55 +347,7 @@ void Robot::AuxComp(array<double, JNT_NUM> &aux_torque, vector<int> &vel_dir)
 	}
 }
 
-bool Robot::GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
-{
-	
-	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
-	{
-		bool select_mode_result = ElmoMaster->SelectModeProcess(false, torque_mode_ready_flag); //0(false for position mode) 1(true for torque mode)
-		if (select_mode_result == true)
-		{
-			res.success = true;
-			res.message = "Please Change To CSP mode";
-		}
-		else
-		{
-			res.success = false;
-			res.message = "Change To CSP mode failed";
-		}
-	}
-	
-	deque<vector<double>> current_position;
-	current_position.clear();
-	vector<double> straight_points;
-	straight_points.clear();
-	array<double, JNT_NUM> straight_position = {0, 90, 90, 0, 90, 0};
-	for(int i =0; i<JNT_NUM;i++)
-	{
-		straight_points.push_back(_zero_points[i] + (straight_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
-	}
-	current_position.push_back(_enc_cnts);
-	current_position.push_back(straight_points);
-	
-	double vel = 0.1*_max_velocity;
-	MotionType type = PVT_GO_STRAIGHT;
-		
-	ElmoMaster->PVTMotionMove(current_position, vel, type);
-	GroupState state;
-	while(1)
-	{
-		state = ElmoMaster->CheckGroupStatus();
-		if (state == STOP)
-		{
-			ElmoMaster->UnloadTable();
-			break;
-		}
-	}
-	res.message = "Motion End";
-	res.success = true;
-	
-    return true;
-}
+
 
 bool Robot::ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
@@ -481,30 +357,7 @@ bool Robot::ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger:
     return true;
 }
 
-/*
-void Robot::LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
-{
-	//cout << "get_message" << endl;
-	if (ElmoMaster->GetDriverMode() == DriverMode::CSP)
-	{	
-		vector<float> distance = msg->ranges;
-		#if 1
-		vector<float>::iterator it = find_if(distance.begin(), distance.end(), [](double value) { return value <= 1; });
-		if (it != distance.end())
-		{   
-			_somethingin_flag = true; 
-			cout << "something in" << endl;
-			bool res = ElmoMaster->StopMotion();
-		}
-    	else
-        {
-			//cout << "safe" << endl;
-			_somethingin_flag = false;
-		}
-		#endif
-	}
-}
-*/
+
 
 bool Robot::LaserManagerCallback(teach_play::LaserManager::Request &req, teach_play::LaserManager::Response &res)
 {
@@ -519,49 +372,7 @@ bool Robot::LaserManagerCallback(teach_play::LaserManager::Request &req, teach_p
 	return true;
 }
 
-bool Robot::TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
-{
-	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
-	{
-		res.success = false;
-		res.message = "DriverMode InCorrect";
-	}
-	else
-	{
-		vector<double> axis_deg1 = {529392, 475362, -1767978, -4064430, 19578637, 14497598};
-		vector<double> axis_deg2 = {539392, 485362, -1867978, -4164430, 19678637, 19497598};
-		vector<double> axis_deg3 = {549392, 495362, -1967978, -4264430, 19778637, 25497598};
 
-		deque<vector<double>> goal_points;
-		goal_points.clear();
-		goal_points.push_back(axis_deg1);
-		goal_points.push_back(axis_deg2);
-		goal_points.push_back(axis_deg3);
-		goal_points.push_back(axis_deg1);
-
-		double vel = 1000000;
-
-		ElmoMaster->GroupLinearMotionMove(goal_points, vel);
-		GroupState state;
-		
-		while(1)
-		{	
-			state = ElmoMaster->CheckGroupStatus();
-			if (state == STOP)
-			{
-				break;
-			}
-			ros::spinOnce();
-		}
-		
-
-		res.message = "Motion End";
-		res.success = true;
-	
-	}
-
-    return true;
-}
 
 void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 {
@@ -583,13 +394,12 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 			switch(goal->type)
     		{ 
         		case 0:
-        			type = PVT_NON_BLENDING;
+        			type = GO_POINTS;
 					ElmoMaster->GroupLinearMotionMove(_play_points, vel);
             		break;
-        		case 1:
-        			type = PVT_BLENDING;
-					ElmoMaster->PVTMotionMove(_play_points, vel, type);
-            		break;
+            	case 1:
+            		type = GO_STRAIGHT;
+            		ElmoMaster->GroupLinearMotionMove(_straight_queue, vel);
     		}
     		
 			ros::Rate rate(10);
@@ -599,14 +409,10 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 				state = ElmoMaster->CheckGroupStatus();
 				if (state == STOP)
 				{
-					if (type == PVT_BLENDING)
-					{
-						ElmoMaster->UnloadTable();
-					}
 					break;
 				}
 
-				_feedback.point_num = ElmoMaster->PointIndexGetter();
+				_feedback.point_num = _play_points.size();
 				_feedback.zone = _current_zone;
 				as.publishFeedback(_feedback);
 				ros::spinOnce();

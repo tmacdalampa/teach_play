@@ -13,20 +13,17 @@ from teach_play.msg import MoveLinearAbsAction, MoveLinearAbsGoal, MoveLinearAbs
 class SelectMode(smach.State):
 	
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['teach','play', 'failed', 'error', 'exit', 'straight', 'clear'])
+		smach.State.__init__(self, outcomes=['teach','play', 'failed', 'error', 'exit', 'clear'])
 		rospy.wait_for_service('/select_mode_service')
-		rospy.wait_for_service('/go_straight_service')
 		rospy.wait_for_service('/clear_pts_service')
 
 		self.triggerSelectMode_service = rospy.ServiceProxy('/select_mode_service', SetBool)
-		self.triggerGoStraight_service = rospy.ServiceProxy('/go_straight_service', Trigger)
 		self.triggerClearPts_service = rospy.ServiceProxy('/clear_pts_service', Trigger)
-		print('initial state SelectMode')
 
 	
 	def execute(self, userdata):
 		
-		mode = raw_input("please input 'teach' or 'play' or 'exit' or 'straight' or 'clear':")
+		mode = raw_input("please input 'teach' or 'play' or 'exit' or 'clear':")
 		req = SetBoolRequest()
 		if mode == 'teach':
 			req.data = True
@@ -46,12 +43,6 @@ class SelectMode(smach.State):
 		elif mode == 'exit':
 			rospy.signal_shutdown("shutdown for no reason.")
 			return 'exit'
-		elif mode == 'straight':
-			res = self.triggerGoStraight_service(TriggerRequest())
-			if res.success == True:
-				return 'straight'
-			else:
-				return 'faliled'
 
 		elif mode == 'clear':
 			res = self.triggerClearPts_service(TriggerRequest())
@@ -68,8 +59,6 @@ class RememberPoint(smach.State):
 		smach.State.__init__(self, outcomes=['continue','done', 'failed'])
 		rospy.wait_for_service('/remember_pts_service')
 		self.triggerRememberPoint_service = rospy.ServiceProxy('/remember_pts_service', Trigger)
-		print('initial state Remember Point')
-
 	
 	def execute(self, userdata):
 		pt = raw_input("please input 'p' when you want to remember this point and 'last' when you finish last point:")
@@ -89,12 +78,11 @@ class StartMotion(smach.State):
 	
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['succeed','failed'])
-		#rospy.wait_for_service('/play_pts_service')
-		#self.triggerStartMotion_service = rospy.ServiceProxy('/play_pts_service', MotionPlanning)
+
 
 		self.client = actionlib.SimpleActionClient('/move_linear_abs', MoveLinearAbsAction)
 		self.client.wait_for_server()
-		print('initial state StartMotion')
+
 
 	
 	def execute(self, userdata):
@@ -104,12 +92,12 @@ class StartMotion(smach.State):
 		while(goal.vel <= 0 or goal.vel > 100):
 			goal.vel = input("please input maximum velocity percentage again:")
 
-		motion_type = raw_input("please input motion type 'b' blending move or 'n' non blending move:")
+		motion_type = raw_input("please input motion type 'p' move points or 'o' move straight:")
 		
-		while(motion_type != 'b' and motion_type != 'n'):
+		while(motion_type != 'p' and motion_type != 'o'):
 			motion_type = input("please input motion type again:")
 		
-		if motion_type == 'b':
+		if motion_type == 'o':
 			goal.type = True
 		else:
 			goal.type = False
@@ -141,7 +129,6 @@ def main():
 											'failed':'ended',
 											'error':'SelectMode',
 											'exit':'ended', 
-											'straight':'SelectMode',
 											'clear':'SelectMode'})
 
 		smach.StateMachine.add('RememberPoint', RememberPoint(),

@@ -40,28 +40,23 @@ class HwTmIntf
     bool SelectModeProcess(bool op_mode, bool &torque_mode_ready_flag);
     bool ReadENC(vector<double> &enc_cnts, vector<int> &vel_dir);
     bool MoveTorque(vector<double> torque_cmd);
-    bool PVTMotionMove(deque<vector<double>> &play_points, double &max_vel, MotionType &types);
-    bool AddPtDynamic(deque<vector<double>> &points);
+    //bool PVTMotionMove(deque<vector<double>> &play_points, double &max_vel, MotionType &types);
     DriverMode GetDriverMode();
     DIState GetDISignal(int digital_input_number);
     bool StopMotion();
-    void ReadGroupStatus();
     GroupState CheckGroupStatus();
     void UnloadTable();
     int GetTableIndex();
     bool SetSpeedOverride(double vel_factor);
     bool GroupLinearMotionMove(deque<vector<double>> &points, double &max_vel);
-    int PointIndexGetter();
 
 
 
   private:
-    int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);
-    int MotionPlanningBlending(deque<vector<double>> &play_points, double &max_vel);
-    int MotionPlanningGoStraight(deque<vector<double>> &play_points, double &max_vel);
+    //int MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel);
+    //int MotionPlanningBlending(deque<vector<double>> &play_points, double &max_vel);
+    //int MotionPlanningGoStraight(deque<vector<double>> &play_points, double &max_vel);
 
-    int _play_points_index;
-    bool _res;
     //variable related with ELMO ethercat master
     MMC_CONNECT_HNDL gConnHndl ;
     CMMCConnection gConn ;

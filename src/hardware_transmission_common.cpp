@@ -331,7 +331,7 @@ bool HwTmIntf::MoveTorque(vector<double> torque_cmd)
     }
 }
 
-
+#if 0
 bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel, MotionType &types)
 {
     ELMO_INT16 iCnt;
@@ -368,9 +368,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
         case MotionType::PVT_BLENDING:
             total_pt_num = MotionPlanningBlending(play_points, max_vel);      
             break;
-        case MotionType::PVT_GO_STRAIGHT:
-            total_pt_num = MotionPlanningGoStraight(play_points, max_vel);  
-            break;
+
     } 
     
     #if 1
@@ -449,6 +447,7 @@ bool HwTmIntf::PVTMotionMove(deque<vector<double>> &play_points, double &max_vel
         return false;
     }
 }
+
 
 int HwTmIntf::MotionPlanningNonBlending(deque<vector<double>> &play_points, double &max_vel)
 {
@@ -624,6 +623,7 @@ int HwTmIntf::MotionPlanningGoStraight(deque<vector<double>> &play_points, doubl
     return point_num;
 
 }
+#endif
 
 DIState HwTmIntf::GetDISignal(int digital_input_number)
 {
@@ -660,18 +660,6 @@ bool HwTmIntf::StopMotion()
             cGrpRef.GroupHalt(1000000, 10000000, MC_ABORTING_MODE);
             while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
         }
-        
-        /*
-        _res = DisableGroup();
-        for(int i = 0; i < JNT_NUM; i++)
-        {
-            if (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK))
-            {
-                cAxis[i].Stop(); //if it is still moving, start first
-                while (!(cAxis[i].ReadStatus()& NC_AXIS_STAND_STILL_MASK));
-            }
-        }
-        */
     }
     catch(CMMCException exp)
     {
@@ -695,272 +683,6 @@ void HwTmIntf::UnloadTable()
     while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
 }
 
-bool HwTmIntf::AddPtDynamic(deque<vector<double>> &points)
-{
-    /*cGrpRef.UnloadPVTTable(handle);
-    std::cout << "UnloadPVTTable" << std::endl;
-    while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
-    */
-    
-	
-    ELMO_INT16 iCnt;
-
-    //PVT init data
-    ELMO_ULINT32 ulMaxPoints;
-    ELMO_ULINT32 ulUnderflowThreshold ;
-    ELMO_UINT8 ucIsCyclic;
-    ELMO_UINT8 ucIsPosAbsolute;
-    ELMO_UINT16 usDimension;
-    MC_COORD_SYSTEM_ENUM eCoordSystem;
-    NC_MOTION_TABLE_TYPE_ENUM eTableMode;
-
-    //PVT appaend data
-    ELMO_ULINT32 ulNumberOfPoints;
-    ELMO_ULINT32 ulStartIndex;
-    ELMO_UINT8 ucIsAutoAppend;
-    ELMO_UINT8 ucIsTimeAbsolute;
-    NC_MOTION_TABLE_TYPE_ENUM eTableType = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
-    
-    int total_pt_num = points.size();
-    cout << "total_pt_num = " << total_pt_num << endl;
-
-    for(int i = 0; i < 12; i++)
-    {
-        vector<double> six_axis_pt = points.front();      
-        for(int j = 0; j<JNT_NUM; j++)
-        {
-            dTable[13*i + 2*(j+1)] = 0; //vel = 0    
-            dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-        }
-        
-        dTable[13*i] = 1;
-        if (i == 0) dTable[i] = 0;
-        points.pop_front();
-    }
-    
-    /*
-    for(int i = 0; i < total_pt_num; i++)
-    {
-        cout << dTable[13*i] << " , "
-       << dTable[13*i+1] << " , "
-       << dTable[13*i+2] << " , "
-       << dTable[13*i+3] << " , "
-       << dTable[13*i+4] << " , "
-       << dTable[13*i+5] << " , "
-       << dTable[13*i+6] << " , "
-       << dTable[13*i+7] << " , "
-       << dTable[13*i+8] << " , "
-       << dTable[13*i+9] << " , "
-       << dTable[13*i+10] << " , "
-       << dTable[13*i+11] << " , "
-       << dTable[13*i+12] << " , " << endl;
-    }
-    */
-    
-    try
-    {
-        //Init PVT memory table
-        ulMaxPoints= 16;
-        ulUnderflowThreshold = 1;
-        ucIsCyclic = 0;
-        ucIsPosAbsolute =1;
-        usDimension = 6;
-        eCoordSystem = MC_ACS_COORD;
-        eTableMode  = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
-
-        handle = cGrpRef.InitPVTTable(  ulMaxPoints,
-                                        ulUnderflowThreshold,
-                                        ucIsCyclic,
-                                        ucIsPosAbsolute,
-                                        usDimension,
-                                        eCoordSystem,
-                                        eTableMode);
-        std::cout << "InitPVTTable!!!" << std::endl;
-
-
-
-        //Append PVT memory table points
-        ulNumberOfPoints = 12;
-        ulStartIndex = 0;
-        ucIsAutoAppend = 0;
-        ucIsTimeAbsolute = 0;
-        eTableType = eNC_TABLE_PVT_ARRAY_QUINTIC_CUB;
-        //cGrpRef.AppendPVTPoints(handle, dTable, ulNumberOfPoints, ucIsTimeAbsolute, eTableType); //auto
-        cGrpRef.AppendPVTPoints(handle, dTable, ulNumberOfPoints, ulStartIndex ,ucIsTimeAbsolute, eTableType); //auto
-        std::cout << "AppendPVTPoints!!!" << std::endl;
-
-        //ELMO_INT32 num;
-        //int tmp = cGrpRef.GetTableList(eTableType, handle, num);
-
-        //Move PVT table
-        cGrpRef.MovePVT(handle,eCoordSystem);
-        std::cout << "Move!!!" << std::endl;
-        int index_pre = 1000;
-        bool append_1_flag = true;
-        bool append_2_flag = false;
-        
-        //wait till motin ends
-        while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK))
-        {
-        	//int index = cGrpRef.GetPVTTableIndex(handle);
-        	//cout << "pvt table index = " << index << endl;
-
-        	
-            int index = cGrpRef.GetPVTTableIndex(handle);
-            if (index != index_pre) cout << "pvt table index = " << index << endl;
-            index_pre = index;
-            #if 0        	
-        	if (points.empty() != true)
-        	{        		
-        		if (index > 5 && append_1_flag == true)
-        		{
-        			if (points.size() >= 6)
-        			{
-        				for(int i = 0; i < 6; i++)
-    					{
-        					vector<double> path_each_joint;
-        					vector<double> six_axis_pt = points.front();      
-        					for(int j = 0; j<JNT_NUM; j++)
-        					{
-            					dTable[13*i + 2*(j+1)] = 0; //vel = 0    
-            					dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-        					}
-        			        		
-        					dTable[13*i] = 1;
-        					points.pop_front();
-    					}
-                        cout << "a" << endl;
-                        for(int i = 0; i < 12; i++)
-                        {
-                            cout << dTable[13*i] << " , "
-                            << dTable[13*i+1] << " , "
-                            << dTable[13*i+2] << " , "
-                            << dTable[13*i+3] << " , "
-                            << dTable[13*i+4] << " , "
-                            << dTable[13*i+5] << " , "
-                            << dTable[13*i+6] << " , "
-                            << dTable[13*i+7] << " , "
-                            << dTable[13*i+8] << " , "
-                            << dTable[13*i+9] << " , "
-                            << dTable[13*i+10] << " , "
-                            << dTable[13*i+11] << " , "
-                            << dTable[13*i+12] << " , " << endl;
-                        }
-    					cGrpRef.AppendPVTPoints(handle, dTable, 6, ulStartIndex, ucIsTimeAbsolute, eTableType);
-                        append_1_flag = false;
-        			    append_2_flag = true;
-                        
-                        
-    				}
-        			else
-        			{
-        				int last_size = points.size();
-        				for(int i = 0; i < last_size; i++)
-    					{
-        					vector<double> path_each_joint;
-        					vector<double> six_axis_pt = points.front();      
-        					for(int j = 0; j<JNT_NUM; j++)
-        					{
-            					dTable[13*i + 2*(j+1)] = 0; //vel = 0    
-            					dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-        					}
-        					
-        					dTable[13*i] = 1;
-        					points.pop_front();
-    					}
-                        cout << "b" << endl;	
-    					cGrpRef.AppendPVTPoints(handle, dTable, last_size, ulStartIndex, ucIsTimeAbsolute, eTableType);
-                        append_1_flag = false;
-        			    append_2_flag = true;
-        			}
-
-        			
-        		}
-        		else if(index <= 5 && append_2_flag == true)
-        		{
-        			if (points.size() >= 6)
-        			{
-        				for(int i = 6; i < 12; i++)
-    					{
-        					vector<double> path_each_joint;
-        					vector<double> six_axis_pt = points.front();      
-        					for(int j = 0; j<JNT_NUM; j++)
-        					{
-            					dTable[13*i + 2*(j+1)] = 0; //vel = 0    
-            					dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-        					}
-        					
-        					dTable[13*i] = 1;
-        					points.pop_front();
-                            
-    					}
-                        cout << "c" << endl;
-                        for(int i = 0; i < 12; i++)
-                        {
-                            cout << dTable[13*i] << " , "
-                            << dTable[13*i+1] << " , "
-                            << dTable[13*i+2] << " , "
-                            << dTable[13*i+3] << " , "
-                            << dTable[13*i+4] << " , "
-                            << dTable[13*i+5] << " , "
-                            << dTable[13*i+6] << " , "
-                            << dTable[13*i+7] << " , "
-                            << dTable[13*i+8] << " , "
-                            << dTable[13*i+9] << " , "
-                            << dTable[13*i+10] << " , "
-                            << dTable[13*i+11] << " , "
-                            << dTable[13*i+12] << " , " << endl;
-                        }
-    					cGrpRef.AppendPVTPoints(handle, dTable, 6, 6,ucIsTimeAbsolute, eTableType);
-                        append_1_flag = false;
-        		        append_2_flag = true;
-                        
-    				}
-        			else
-        			{
-        				int last_size = points.size();
-        				for(int i = 6; i < 6+last_size; i++)
-    					{
-        					vector<double> path_each_joint;
-        					vector<double> six_axis_pt = points.front();      
-        					for(int j = 0; j<JNT_NUM; j++)
-        					{
-            					dTable[13*i + 2*(j+1)] = 0; //vel = 0    
-            					dTable[13*i + 2*(j+1)-1] = six_axis_pt[j];
-        					}
-        					
-        					dTable[13*i] = 1;
-        					points.pop_front();
-    					}
-                        cout << "d" << endl;
-    					cGrpRef.AppendPVTPoints(handle, dTable, last_size, 6,ucIsTimeAbsolute, eTableType);
-        				//append second part
-                        append_1_flag = false;
-        			    append_2_flag = true;
-        			}
-                    
-                    
-        		}
-        	}
-
-        	#endif
-        }
-        
-
-        cGrpRef.UnloadPVTTable(handle);
-        std::cout << "UnloadPVTTable" << std::endl;
-        while(!(cGrpRef.ReadStatus() & NC_GROUP_STANDBY_MASK));
-
-        return true;
-
-    }
-    catch(CMMCException exp)
-    {
-        Exception(exp);
-        return false;
-    }
-    
-}
 
 int HwTmIntf::GetTableIndex()
 {
@@ -972,7 +694,6 @@ bool HwTmIntf::SetSpeedOverride(double vel_factor)
 {
     try
     {
-        //cout << "vel_factor = " << vel_factor << endl;
         cGrpRef.GroupSetOverride(vel_factor, vel_factor, vel_factor, 0);
         return true;
     }
@@ -1000,7 +721,6 @@ bool HwTmIntf::GroupLinearMotionMove(deque<vector<double>> &points, double &max_
         
         for(int i = 0; i < point_num; i++)
         {
-            _play_points_index = i + 1;
             vector<double> goal_position = points[i];
             for (int j = 0; j < JNT_NUM; j++)
             {
@@ -1015,10 +735,4 @@ bool HwTmIntf::GroupLinearMotionMove(deque<vector<double>> &points, double &max_
     {
         Exception(exp);
     }
-}
-
-int HwTmIntf::PointIndexGetter()
-{
-    int index = _play_points_index;
-    return index;
 }

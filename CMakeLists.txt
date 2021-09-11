@@ -235,16 +235,16 @@ target_link_libraries(eigen_test
 )
 
 
-add_executable(add_pt_dynamic
-  src/add_pt_dynamic.cpp
-  src/hardware_transmission_common.cpp
-)
+#add_executable(add_pt_dynamic
+#  src/add_pt_dynamic.cpp
+#  src/hardware_transmission_common.cpp
+#)
 
-target_link_libraries(add_pt_dynamic
-  MMC_APP_LinuxRpc64
-  MMCPP_LinuxRpc64
-  ${catkin_LIBRARIES}
-)
+#target_link_libraries(add_pt_dynamic
+#  MMC_APP_LinuxRpc64
+#  MMCPP_LinuxRpc64
+#  ${catkin_LIBRARIES}
+#)
 
 
 add_executable(teach_and_play

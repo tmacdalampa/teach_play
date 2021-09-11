@@ -46,10 +46,12 @@ public:
 	ros::Publisher robot_pose_pub;
 	ros::ServiceServer control_mode_service;
 	ros::ServiceServer remember_pts_service;
-	ros::ServiceServer play_pts_service;
+	//ros::ServiceServer play_pts_service;
 	ros::ServiceServer go_straight_service;
 	ros::ServiceServer clear_pts_service;
 	ros::ServiceServer laser_manager_service;
+	actionlib::SimpleActionServer<teach_play::MoveLinearAbsAction> as;
+
 	//ros::ServiceServer test_pts_service;
 	//ros::Subscriber laser_sub;
 
@@ -69,14 +71,13 @@ public:
 	void RobotPosePublisher();
 	bool SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 	bool RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-	bool GoStraightCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	bool ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-	//void LaserScanCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
 	
 	bool LaserManagerCallback(teach_play::LaserManager::Request &req, teach_play::LaserManager::Response &res);
 	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
-    bool TestPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	void UpdateTorque();
+	void Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal);
+
 
 	//void Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal, Server* as);
 
@@ -89,8 +90,6 @@ public:
 
 
 private:
-	actionlib::SimpleActionServer<teach_play::MoveLinearAbsAction> as;
-	void Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal);
 	//parameters from yaml file
 	vector<int> _gear_ratios;
 	vector<int> _zero_points; //unit cnts
@@ -118,9 +117,11 @@ private:
 	vector<int> _vel_dir_tmp;
 	
 	deque<vector<double>> _play_points;
-	deque<vector<double>> _reapir_points;
 	bool _sensor_flag;
 	string _current_zone;
+	array<double, JNT_NUM> _straight_position;
+	vector<double> _straight_points;
+	deque<vector<double>> _straight_queue;
 
 	void FK(vector<double> &robot_pose, vector<double> &axis_deg);
 	Matrix4d GetTFMatrix(double axis_deg, int id);
