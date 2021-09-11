@@ -3,7 +3,7 @@ import rospy
 from sensor_msgs.msg import LaserScan
 from std_srvs.srv import SetBool, SetBoolRequest
 from std_msgs.msg import Float32
-from teach_play.srv import SpeedOverride, SpeedOverrideRequest, SpeedOverrideResponse
+from teach_play.srv import LaserManager, LaserManagerRequest, LaserManagerResponse
 
 triggerPauseArmService = None
 
@@ -13,8 +13,8 @@ class LaserScanManager():
 
         self._distance = distance
         self._value = 'null'
-        self._triggerPauseArmService = rospy.ServiceProxy('/speed_override_service', SpeedOverride)
-        self._req = SpeedOverrideRequest()
+        self._triggerPauseArmService = rospy.ServiceProxy('/laser_manager_service', LaserManager)
+        self._req = LaserManagerRequest()
     def callback(self, data):        
 
         """
@@ -41,7 +41,7 @@ class LaserScanManager():
         """
 
         
-        req = SpeedOverrideRequest()
+        req = LaserManagerRequest()
         laser_range = data.ranges
         
         res_stop = any(i < self._distance[0] for i in laser_range)
