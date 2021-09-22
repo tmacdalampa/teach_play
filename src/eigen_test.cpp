@@ -97,14 +97,14 @@ void IK(vector<double> &robot_pose, vector<double> &axis_deg, vector<double> &cu
 
     Matrix4d T06, inv_T03, T36;
 
-    T06 << cos(yaw)*cos(pitch), cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), robot_pose[0];
-       sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), robot_pose[1];
-        -sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(roll), robot_pose[2];
+    T06 << cos(yaw)*cos(pitch), cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), robot_pose[0],
+       sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), robot_pose[1],
+        -sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(roll), robot_pose[2],
        0,0,0,1;
 	
-	inv_T03 << (cos(axis1_position)*cos(axis2_position + axis2_position)), (cos(axis2_position + axis3_position)*sin(axis1_position)), (sin(axis2_position + axis3_position)), (-a3*cos(axis3_position) -d1*sin(axis2_position + axis3_position));
-          (-cos(axis1_position)*sin(axis2_position + axis3_position)), (-sin(axis1_position)*sin(axis2_position + axis3_position)), (cos(axis2_position + axis3_position)), (a3*sin(axis3_position) - d1*cos(axis2_position + axis3_position));
-          (sin(axis1_position)), (-cos(axis1_position)), 0, 0;
+	inv_T03 << (cos(axis1_position)*cos(axis2_position + axis2_position)), (cos(axis2_position + axis3_position)*sin(axis1_position)), (sin(axis2_position + axis3_position)), (-a3*cos(axis3_position) -d1*sin(axis2_position + axis3_position)),
+          (-cos(axis1_position)*sin(axis2_position + axis3_position)), (-sin(axis1_position)*sin(axis2_position + axis3_position)), (cos(axis2_position + axis3_position)), (a3*sin(axis3_position) - d1*cos(axis2_position + axis3_position)),
+          (sin(axis1_position)), (-cos(axis1_position)), 0, 0,
                 0, 0, 0, 1;
 	
 	T36  = inv_T03*T06;
@@ -117,7 +117,7 @@ void IK(vector<double> &robot_pose, vector<double> &axis_deg, vector<double> &cu
     	double t5_tmp = atan2(-sqrt(T36(1,0)*T36(1,0)+T36(1,1)*T36(1,1)), -T36(1,2));
     	axis5_position = ChooseNearst(t5,t5_tmp, current_position[4]/RAD2DEG);
 
-    	axis4_position = atan2(-T36(1,1)/sin(axis5_position), -T36(0,2)/sin(axis5_position));
+    	axis4_position = atan2(-T36(2,2)/sin(axis5_position), -T36(0,2)/sin(axis5_position));
     	axis6_position = atan2(T36(1,1)/sin(axis5_position), -T36(1,0)/sin(axis5_position));
     }
     else
@@ -135,18 +135,17 @@ void IK(vector<double> &robot_pose, vector<double> &axis_deg, vector<double> &cu
 	axis_deg.push_back(axis5_position*RAD2DEG);
 	axis_deg.push_back(axis6_position*RAD2DEG);
 
-	for(int i = 0; i < 6; i++)
-	{
-  		cout << axis_deg[0] << " , "
-       << axis_deg[1] << " , "
-       << axis_deg[2] << " , "
-       << axis_deg[3] << " , "
-       << axis_deg[4] << " , "
-       << axis_deg[5] << " , " << endl;
-	}
+	
+  	cout << axis_deg[0] << " , "
+    << axis_deg[1] << " , "
+    << axis_deg[2] << " , "
+    << axis_deg[3] << " , "
+    << axis_deg[4] << " , "
+    << axis_deg[5] << " , " << endl;
+	
 }
 
-void Robot::FK(vector<double> &robot_pose, vector<double> &axis_deg)
+void FK(vector<double> &robot_pose, vector<double> &axis_deg)
 {
 	Matrix4d _T01, _T12, _T23, _T34, _T45, _T56 , _T06;
 	_T01 = GetTFMatrix(axis_deg[0], 1);
@@ -162,14 +161,27 @@ void Robot::FK(vector<double> &robot_pose, vector<double> &axis_deg)
 	robot_pose[4] = RAD2DEG * atan2(-_T06(2, 0), sqrt(_T06(0, 0) * _T06(0, 0) + _T06(1, 0) * _T06(1, 0))); //pitch
     robot_pose[3] = RAD2DEG * atan2(_T06(2, 1) / cos(robot_pose[4]), _T06(2, 2) / cos(robot_pose[4])); //roll
     robot_pose[5] = RAD2DEG * atan2(_T06(1, 0) / cos(robot_pose[4]), _T06(0, 0) / cos(robot_pose[4])); //yaw
+    
+    cout << robot_pose[0] << " , "
+    << robot_pose[1] << " , "
+    << robot_pose[2] << " , "
+    << robot_pose[3] << " , "
+    << robot_pose[4] << " , "
+    << robot_pose[5] << " , " << endl;
+    
 }
 
 int main(int argc, char** argv)
 {
 	array<double, 6> robot_pose;
-	array<double, 6> axis_deg = {0, 90, 90, 0, 90, 0};
+	vector<double> axis_deg;
+    vector<double> current_position = {0, 90, 0, 0, 90, 0};
+
 	ros::init(argc, argv, "eigen_test");
-	/*
+	vector<double> pose = {0.425, 0, 0.7755, 180, 0, 0};
+    //FK(pose, axis_deg);
+    IK(pose, axis_deg, current_position);
+    /*
 	Matrix4d _T01, _T12, _T23, _T34, _T45, _T56 , _T06;
 	_T01 = GetTFMatrix(axis_deg[0], 1);
 	_T12 = GetTFMatrix(axis_deg[1], 2); 

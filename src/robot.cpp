@@ -215,6 +215,91 @@ void Robot::FK(vector<double> &robot_pose, vector<double> &axis_deg)
     robot_pose[5] = RAD2DEG * atan2(_T06(1, 0) / cos(robot_pose[4]), _T06(0, 0) / cos(robot_pose[4])); //yaw
 }
 
+void Robot::IK(vector<double> &robot_pose, vector<double> &axis_deg, vector<double> &current_position)
+{
+	axis_deg.clear();
+	
+	double roll = robot_pose[3]/RAD2DEG; double pitch = robot_pose[4]/RAD2DEG; double yaw = robot_pose[5]/RAD2DEG;
+	double wrist_x = robot_pose[0]- _d[5]*(cos(roll)*cos(yaw)*sin(pitch)+sin(roll)*sin(yaw));
+	double wrist_y = robot_pose[1]- _d[5]*(-cos(yaw)*sin(roll)+cos(roll)*sin(pitch)*sin(yaw));
+	double wrist_z = robot_pose[2]- _d[5]*cos(pitch)*cos(roll);
+	double t1 = atan2(wrist_y, wrist_x);
+	double t1_tmp = atan2(-wrist_y, -wrist_x);
+	double axis1_position = ChooseNearst(t1,t1_tmp, current_position[0]/RAD2DEG); //axis 1
+	
+	double x_dot = wrist_x * cos(axis1_position) + wrist_y * sin(axis1_position);
+	double y_dot = wrist_y * cos(axis1_position) - wrist_x * sin(axis1_position);
+	double z_dot = (wrist_z - _d[0]);
+	double t3 = asin((x_dot*x_dot+z_dot*z_dot-_a[2]*_a[2]-_d[3]*_d[3])/(2*_a[2]*_d[3]));
+	double t3_tmp = PI-t3;
+	double axis3_position = ChooseNearst(t3,t3_tmp, current_position[2]/RAD2DEG); //axis2
+	
+	double f1 = _a[2] + _d[3]*sin(axis3_position);
+	double f2 = -_d[3]*cos(axis3_position);
+	double axis2_position;
+	if (f2 * f2 + f1 * f1 >= x_dot * x_dot)
+    {	
+    	double u = (-f2 * x_dot + f1 * sqrt(f1 * f1 + f2 * f2 - x_dot * x_dot)) / (f1 * f1 + f2 * f2);
+    	double u_tmp = (-f2 * x_dot - f1 * sqrt(f1 * f1 + f2 * f2 - x_dot * x_dot)) / (f1 * f1 + f2 * f2);       
+    	if (f2 == 0) 
+    		axis2_position=0;
+    	else
+    	{
+        	double t2 = atan2(u, (x_dot + f2 * u) / f1);
+        	double t2_tmp = atan2(u_tmp, (x_dot + f2 * u_tmp) / f1);
+        	axis2_position = ChooseNearst(t2,t2_tmp, current_position[1]/RAD2DEG);
+        }
+    }
+
+    Matrix4d T06, inv_T03, T36;
+
+    T06 << cos(yaw)*cos(pitch), cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), robot_pose[0],
+       sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), robot_pose[1],
+        -sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(roll), robot_pose[2],
+       0,0,0,1;
+	
+	inv_T03 << (cos(axis1_position)*cos(axis2_position + axis2_position)), (cos(axis2_position + axis3_position)*sin(axis1_position)), (sin(axis2_position + axis3_position)), (-_a[2]*cos(axis3_position) -_d[0]*sin(axis2_position + axis3_position)),
+          (-cos(axis1_position)*sin(axis2_position + axis3_position)), (-sin(axis1_position)*sin(axis2_position + axis3_position)), (cos(axis2_position + axis3_position)), (_a[2]*sin(axis3_position) - _d[0]*cos(axis2_position + axis3_position)),
+          (sin(axis1_position)), (-cos(axis1_position)), 0, 0,
+                0, 0, 0, 1;
+	
+	T36  = inv_T03*T06;
+
+	double axis4_position, axis5_position, axis6_position;
+
+	if (T36(1, 2) != -1 && T36(1,2) != 1)
+    {
+    	double t5 = atan2(sqrt(T36(1,0)*T36(1,0)+T36(1,1)*T36(1,1)), -T36(1,2));
+    	double t5_tmp = atan2(-sqrt(T36(1,0)*T36(1,0)+T36(1,1)*T36(1,1)), -T36(1,2));
+    	axis5_position = ChooseNearst(t5,t5_tmp, current_position[4]/RAD2DEG);
+
+    	axis4_position = atan2(-T36(2,2)/sin(axis5_position), -T36(0,2)/sin(axis5_position));
+    	axis6_position = atan2(T36(1,1)/sin(axis5_position), -T36(1,0)/sin(axis5_position));
+    }
+    else
+    {
+    	//singular point
+    	axis4_position = 0.5 * atan2(T36(2, 0), T36(0, 0));
+    	axis5_position = 0;
+    	axis6_position = axis4_position;
+	}
+
+	axis_deg.push_back(axis1_position*RAD2DEG);
+	axis_deg.push_back(axis2_position*RAD2DEG);
+	axis_deg.push_back(axis3_position*RAD2DEG);
+	axis_deg.push_back(axis4_position*RAD2DEG);
+	axis_deg.push_back(axis5_position*RAD2DEG);
+	axis_deg.push_back(axis6_position*RAD2DEG);
+
+	
+  	cout << axis_deg[0] << " , "
+    << axis_deg[1] << " , "
+    << axis_deg[2] << " , "
+    << axis_deg[3] << " , "
+    << axis_deg[4] << " , "
+    << axis_deg[5] << " , " << endl;
+}
+
 void Robot::UpdateTorque()
 {
 	array<double, JNT_NUM> g_torque;
@@ -430,3 +515,4 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 		}
 	}
 }
+

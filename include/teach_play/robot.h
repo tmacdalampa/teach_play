@@ -52,19 +52,6 @@ public:
 	ros::ServiceServer laser_manager_service;
 	actionlib::SimpleActionServer<teach_play::MoveLinearAbsAction> as;
 
-	//ros::ServiceServer test_pts_service;
-	//ros::Subscriber laser_sub;
-
-	//typedef actionlib::SimpleActionServer<teach_play::MoveLinearAbsAction> Server;
-
-	
-
-
-
-
-	//ros::Rate rate(10);
-
-
 	Robot(ros::NodeHandle *nh);
 	~Robot();
 	void JointStatesPublisher();
@@ -77,9 +64,6 @@ public:
 	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
 	void UpdateTorque();
 	void Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal);
-
-
-	//void Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal, Server* as);
 
 	teach_play::MoveLinearAbsFeedback _feedback;
 	teach_play::MoveLinearAbsResult _result;
@@ -110,6 +94,8 @@ private:
 	vector<double> _robot_pose;
 	vector<double> _axis_torque_cmd;
 
+	vector<double> _goal_position;
+	vector<double> _goal_pose;
 
 	vector<double> _enc_cnts;
 	vector<int> _vel_dir;
@@ -124,6 +110,8 @@ private:
 	deque<vector<double>> _straight_queue;
 
 	void FK(vector<double> &robot_pose, vector<double> &axis_deg);
+	void IK(vector<double> &robot_pose, vector<double> &axis_deg, vector<double> &current_position);
+	double ChooseNearst(double a, double b, double c);
 	Matrix4d GetTFMatrix(double axis_deg, int id);
 	void GravityComp(array<double, JNT_NUM> &g_torque, vector<double> &axis_deg);
 	void AuxComp(array<double, JNT_NUM> &aux_torque, vector<int> &vel_dir);
