@@ -16,7 +16,8 @@ enum DriverMode
 enum MotionType
 {
 	GO_POINTS = 0,
-	GO_STRAIGHT = 1
+	GO_STRAIGHT = 1,
+	JOG = 2
 };
 
 enum DIState

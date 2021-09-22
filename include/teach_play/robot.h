@@ -104,10 +104,10 @@ private:
 	
 	deque<vector<double>> _play_points;
 	bool _sensor_flag;
-	string _current_zone;
 	array<double, JNT_NUM> _straight_position;
 	vector<double> _straight_points;
 	deque<vector<double>> _straight_queue;
+	deque<vector<double>> _jog_goal_queue;
 
 	void FK(vector<double> &robot_pose, vector<double> &axis_deg);
 	void IK(vector<double> &robot_pose, vector<double> &axis_deg, vector<double> &current_position);
@@ -115,6 +115,7 @@ private:
 	Matrix4d GetTFMatrix(double axis_deg, int id);
 	void GravityComp(array<double, JNT_NUM> &g_torque, vector<double> &axis_deg);
 	void AuxComp(array<double, JNT_NUM> &aux_torque, vector<int> &vel_dir);
+	void GetJogGoal();
 
 
 };

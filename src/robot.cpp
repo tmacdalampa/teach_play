@@ -62,8 +62,6 @@ Robot::Robot(ros::NodeHandle *nh):
 
 	_play_points.clear();
 
-	_current_zone = "safe";
-
     for(int i = 0; i<JNT_NUM; i++)
     {
     	_axis_deg.push_back(0);
@@ -141,7 +139,6 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 	if (select_mode_result == true)
 	{
 		res.success = true;
-		_sensor_flag = true;
 	}
 	else
 	{
@@ -300,6 +297,16 @@ void Robot::IK(vector<double> &robot_pose, vector<double> &axis_deg, vector<doub
     << axis_deg[5] << " , " << endl;
 }
 
+double Robot::ChooseNearst(double a, double b, double c)
+{
+	double res;
+	if (abs(a - c) <= abs(b - c))
+        res = a;
+    else
+        res = b;
+    return res;
+}
+
 void Robot::UpdateTorque()
 {
 	array<double, JNT_NUM> g_torque;
@@ -449,7 +456,7 @@ bool Robot::LaserManagerCallback(teach_play::LaserManager::Request &req, teach_p
 	
 	if (_sensor_flag == true)
 	{
-		_current_zone = req.zone;
+		string current_zone = req.zone;
 		ElmoMaster->SetSpeedOverride(req.vel_factor);
 		res.message = "SpeedOverride is set";
 	}
@@ -465,54 +472,64 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
   	
   	if (ElmoMaster->GetDriverMode() != DriverMode::CSP)
 	{
-		_result.success = false;
-		_result.message = "driver mode incorrect";
-		as.setPreempted(_result);
-	}
-	else
-	{	
-		if (_play_points.empty() != true)
-		{
-			double vel = _max_velocity*0.01*goal->vel;
-			MotionType type;
+		bool select_mode_result = ElmoMaster->SelectModeProcess(false, torque_mode_ready_flag);
 
-			switch(goal->type)
-    		{ 
-        		case 0:
-        			type = GO_POINTS;
-					ElmoMaster->GroupLinearMotionMove(_play_points, vel);
-            		break;
-            	case 1:
-            		type = GO_STRAIGHT;
-            		ElmoMaster->GroupLinearMotionMove(_straight_queue, vel);
-    		}
-    		
-			ros::Rate rate(10);
-			GroupState state;
-			while(1)
-			{	
-				state = ElmoMaster->CheckGroupStatus();
-				if (state == STOP)
-				{
-					break;
-				}
-
-				_feedback.point_num = _play_points.size();
-				_feedback.zone = _current_zone;
-				as.publishFeedback(_feedback);
-				ros::spinOnce();
-				rate.sleep();
-			}
-			_result.success = true;
-			_result.message = "motion succeed";
-			as.setSucceeded(_result);
-		}
-		else
+		if (select_mode_result != true)
 		{
 			_result.success = false;
-			_result.message = "motion failed";
+			_result.message = "change op mode failed";
 			as.setPreempted(_result);
 		}
 	}
+	
+		
+	
+	double vel = _max_velocity*0.01*goal->vel;
+	double vel_tmp = _max_velocity*0.1;
+	MotionType type;
+
+	switch(goal->type)
+	{ 
+    	case 0:
+    		type = GO_POINTS;
+    		_sensor_flag = true;
+			ElmoMaster->GroupLinearMotionMove(_play_points, vel);
+        	break;
+        case 1:
+        	type = GO_STRAIGHT;
+        	ElmoMaster->GroupLinearMotionMove(_straight_queue, vel_tmp);
+        	break;
+        case 2:
+        	type = JOG;
+        	GetJogGoal();
+        	ElmoMaster->GroupLinearMotionMove(_jog_goal_queue, vel_tmp);
+        	break;
+	}
+		
+	ros::Rate rate(10);
+	GroupState state;
+	while(1)
+	{	
+		state = ElmoMaster->CheckGroupStatus();
+		if (state == STOP)
+		{
+			break;
+		}
+
+		//_feedback.point_num = _play_points.size();
+		//_feedback.zone = _current_zone;
+		//as.publishFeedback(_feedback);
+		ros::spinOnce();
+		rate.sleep();
+	}
+	_result.success = true;
+	_result.message = "motion succeed";
+	as.setSucceeded(_result);
+	_sensor_flag = false;
+	
 }
 
+void Robot::GetJogGoal()
+{
+	
+}
