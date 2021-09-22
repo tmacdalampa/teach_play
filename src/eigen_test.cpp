@@ -13,6 +13,7 @@ using namespace Eigen;
 #define DEG2RAD 0.017453
 #define RAD2DEG 57.2967
 #define JNT_NUM 6
+#define PI 3.14159
 
 Matrix4d GetTFMatrix(double axis_deg, int id)
 {
@@ -47,90 +48,120 @@ Matrix4d GetTFMatrix(double axis_deg, int id)
   return out_T;
 }
 
-void GravityComp(array<double, JNT_NUM> &g_torque, array<double, JNT_NUM> &axis_deg)
+
+double ChooseNearst(double a, double b, double c)
 {
+	double res;
+	if (abs(a - c) <= abs(b - c))
+        res = a;
+    else
+        res = b;
+    return res;
+}
 
-  Matrix4d _T01 = GetTFMatrix(axis_deg[0], 1);
-  Matrix4d _T12 = GetTFMatrix(axis_deg[1], 2);
-  Matrix4d _T23 = GetTFMatrix(axis_deg[2], 3);
-  Matrix4d _T34 = GetTFMatrix(axis_deg[3], 4);
-  Matrix4d _T45 = GetTFMatrix(axis_deg[4], 5);
-  Matrix4d _T56 = GetTFMatrix(axis_deg[5], 6);
-  
-  for(int i = 0; i<JNT_NUM; i++)
-  {
-    g_torque[i] = 0;
-  }
-  
-  //assume O as oroginal point of arm, A as origin point of frame 1 and 2, B as origin point of frame 3, C as interaction of axis456, D as TCP point
-  Vector4d o(0,0,0,1);
-  Vector3d e(0,0,1);
-  Matrix3d R01, R12, R23;
-  R01(0,0) = _T01(0,0);R01(0,1) = _T01(0,1);R01(0,2) = _T01(0,2);
-  R01(1,0) = _T01(1,0);R01(1,1) = _T01(1,1);R01(1,2) = _T01(1,2);
-  R01(2,0) = _T01(2,0);R01(2,1) = _T01(2,1);R01(2,2) = _T01(2,2);
+void IK(vector<double> &robot_pose, vector<double> &axis_deg, vector<double> &current_position)
+{
+	axis_deg.clear();
+	double d6 = 0.0775; double d4 = 0.425; double a3 = 0.425; double d1 = 0.426;
+	double roll = robot_pose[3]/RAD2DEG; double pitch = robot_pose[4]/RAD2DEG; double yaw = robot_pose[5]/RAD2DEG;
+	double wrist_x = robot_pose[0]- d6*(cos(roll)*cos(yaw)*sin(pitch)+sin(roll)*sin(yaw));
+	double wrist_y = robot_pose[1]- d6*(-cos(yaw)*sin(roll)+cos(roll)*sin(pitch)*sin(yaw));
+	double wrist_z = robot_pose[2]- d6*cos(pitch)*cos(roll);
+	double t1 = atan2(wrist_y, wrist_x);
+	double t1_tmp = atan2(-wrist_y, -wrist_x);
+	double axis1_position = ChooseNearst(t1,t1_tmp, current_position[0]/RAD2DEG); //axis 1
+	
+	double x_dot = wrist_x * cos(axis1_position) + wrist_y * sin(axis1_position);
+	double y_dot = wrist_y * cos(axis1_position) - wrist_x * sin(axis1_position);
+	double z_dot = (wrist_z - d1);
+	double t3 = asin((x_dot*x_dot+z_dot*z_dot-a3*a3-d4*d4)/(2*a3*d4));
+	double t3_tmp = PI-t3;
+	double axis3_position = ChooseNearst(t3,t3_tmp, current_position[2]/RAD2DEG); //axis2
+	
+	double f1 = a3 + d4*sin(axis3_position);
+	double f2 = -d4*cos(axis3_position);
+	double axis2_position;
+	if (f2 * f2 + f1 * f1 >= x_dot * x_dot)
+    {	
+    	double u = (-f2 * x_dot + f1 * sqrt(f1 * f1 + f2 * f2 - x_dot * x_dot)) / (f1 * f1 + f2 * f2);
+    	double u_tmp = (-f2 * x_dot - f1 * sqrt(f1 * f1 + f2 * f2 - x_dot * x_dot)) / (f1 * f1 + f2 * f2);       
+    	if (f2 == 0) 
+    		axis2_position=0;
+    	else
+    	{
+        	double t2 = atan2(u, (x_dot + f2 * u) / f1);
+        	double t2_tmp = atan2(u_tmp, (x_dot + f2 * u_tmp) / f1);
+        	axis2_position = ChooseNearst(t2,t2_tmp, current_position[1]/RAD2DEG);
+        }
+    }
 
-  R12(0,0) = _T12(0,0);R12(0,1) = _T12(0,1);R12(0,2) = _T12(0,2);
-  R12(1,0) = _T12(1,0);R12(1,1) = _T12(1,1);R12(1,2) = _T12(1,2);
-  R12(2,0) = _T12(2,0);R12(2,1) = _T12(2,1);R12(2,2) = _T12(2,2);
+    Matrix4d T06, inv_T03, T36;
 
-  R23(0,0) = _T23(0,0);R23(0,1) = _T23(0,1);R23(0,2) = _T23(0,2);
-  R23(1,0) = _T23(1,0);R23(1,1) = _T23(1,1);R23(1,2) = _T23(1,2);
-  R23(2,0) = _T23(2,0);R23(2,1) = _T23(2,1);R23(2,2) = _T23(2,2);
+    T06 << cos(yaw)*cos(pitch), cos(yaw)*sin(pitch)*sin(roll)-sin(yaw)*cos(roll), cos(yaw)*sin(pitch)*cos(roll)+sin(yaw)*sin(roll), robot_pose[0];
+       sin(yaw)*cos(pitch), sin(yaw)*sin(pitch)*sin(roll)+cos(yaw)*cos(roll), sin(yaw)*sin(pitch)*cos(roll)-cos(yaw)*sin(roll), robot_pose[1];
+        -sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(roll), robot_pose[2];
+       0,0,0,1;
+	
+	inv_T03 << (cos(axis1_position)*cos(axis2_position + axis2_position)), (cos(axis2_position + axis3_position)*sin(axis1_position)), (sin(axis2_position + axis3_position)), (-a3*cos(axis3_position) -d1*sin(axis2_position + axis3_position));
+          (-cos(axis1_position)*sin(axis2_position + axis3_position)), (-sin(axis1_position)*sin(axis2_position + axis3_position)), (cos(axis2_position + axis3_position)), (a3*sin(axis3_position) - d1*cos(axis2_position + axis3_position));
+          (sin(axis1_position)), (-cos(axis1_position)), 0, 0;
+                0, 0, 0, 1;
+	
+	T36  = inv_T03*T06;
 
-  Vector3d e02 = R01*R12*e;
-  Vector3d e03 = R01*R12*R23*e;
-  
-  //first calculate axis 2 torque
-  //gravity torque caused by axis3 on axis2 
-  Vector4d rAB2  = _T23*o;
-  Vector3d rAB(rAB2(0,0),rAB2(1,0), rAB2(2,0));
-  Vector3d rAB_0 =  R01*R12*rAB; //vector AB view as frame 0;
-  Vector3d F3(0,0,-5*9.81);
-  Vector3d T32 = rAB_0.cross(F3);
-  double T32_real = T32.dot(e02);
-  
-  //gravity torque caused by axis456 on axis2 
-  Vector4d rBC3 = _T34*_T45*o;
-  Vector3d rBC(rBC3(0,0), rBC3(1,0), rBC3(2,0));
-  Vector3d rBC_0 = R01*R12*R23*rBC;
-  Vector3d rAC_0 = rAB_0 + rBC_0;
-  Vector3d F4(0,0,-(7.5*9.81));
-  Vector3d T42 = rAC_0.cross(F4);
-  double T42_real = T42.dot(e02);
+	double axis4_position, axis5_position, axis6_position;
 
-  //gravity torque caused by axis456 on axis3
-  Vector3d T43 = rBC_0.cross(F4);
-  double T43_real = T43.dot(e03);
+	if (T36(1, 2) != -1 && T36(1,2) != 1)
+    {
+    	double t5 = atan2(sqrt(T36(1,0)*T36(1,0)+T36(1,1)*T36(1,1)), -T36(1,2));
+    	double t5_tmp = atan2(-sqrt(T36(1,0)*T36(1,0)+T36(1,1)*T36(1,1)), -T36(1,2));
+    	axis5_position = ChooseNearst(t5,t5_tmp, current_position[4]/RAD2DEG);
 
-  //cout << e02 << endl;
-  //cout << R23 << endl;
-  cout << "axis2 torque = " << T32_real + T42_real << endl;
-  cout << "axis3 torque = " << T43_real << endl;
-  #if 0
-  //gravity torque caused by axis456 on axis2
-  MatrixXd rAC_0 = rAB_0 + _T01*_T12*_T23*_T34*_T45*o; //AC = AB+BC
-  Vector3d rAC(rAC_0(0,0),rAC_0(1,0), rAC_0(2,0));
-  Vector3d F4(0,0,-(7.5*9.81));
-  Vector3d T42 = rAC.cross(F4);
-  double T42_real = T42.dot(e02);
+    	axis4_position = atan2(-T36(1,1)/sin(axis5_position), -T36(0,2)/sin(axis5_position));
+    	axis6_position = atan2(T36(1,1)/sin(axis5_position), -T36(1,0)/sin(axis5_position));
+    }
+    else
+    {
+    	//singular point
+    	axis4_position = 0.5 * atan2(T36(2, 0), T36(0, 0));
+    	axis5_position = 0;
+    	axis6_position = axis4_position;
+	}
 
-  //gravity torque caused by axis456 on axis3
-  MatrixXd rBC_0 = _T01*_T12*_T23*_T34*_T45*o;
-  Vector3d rBC(rBC_0(0,0),rBC_0(1,0), rBC_0(2,0));
-  Vector3d T43 = rBC.cross(F4);
-  double T43_real = T43.dot(e03);
-  cout << rAB_0 << endl;
-  //cout << "========" << endl;
-  //cout << T43 << endl;
-  //cout << "axis2 torque = " << T32_real + T42_real << endl;
-  //cout << "axis3 torque = " << T43_real << endl;
-  //g_torque[1] = -1000 * ((T32_real + T42_real) / _gear_ratios[1])/_motor_torque_const[1];
-  //g_torque[2] = -1000 * (T43_real/ _gear_ratios[2]) / _motor_torque_const[2]; 
-  //cout << "axis2 motor g torque" << -1000 * ((T32_real + T42_real) / _gear_ratios[1])/_motor_torque_const[1] << endl;
-  //cout << "axis3 motor g torque" << (T43_real/ _gear_ratios[2]) / _motor_torque_const[2]; 
+	axis_deg.push_back(axis1_position*RAD2DEG);
+	axis_deg.push_back(axis2_position*RAD2DEG);
+	axis_deg.push_back(axis3_position*RAD2DEG);
+	axis_deg.push_back(axis4_position*RAD2DEG);
+	axis_deg.push_back(axis5_position*RAD2DEG);
+	axis_deg.push_back(axis6_position*RAD2DEG);
 
-  #endif
+	for(int i = 0; i < 6; i++)
+	{
+  		cout << axis_deg[0] << " , "
+       << axis_deg[1] << " , "
+       << axis_deg[2] << " , "
+       << axis_deg[3] << " , "
+       << axis_deg[4] << " , "
+       << axis_deg[5] << " , " << endl;
+	}
+}
+
+void Robot::FK(vector<double> &robot_pose, vector<double> &axis_deg)
+{
+	Matrix4d _T01, _T12, _T23, _T34, _T45, _T56 , _T06;
+	_T01 = GetTFMatrix(axis_deg[0], 1);
+	_T12 = GetTFMatrix(axis_deg[1], 2); 
+	_T23 = GetTFMatrix(axis_deg[2], 3); 
+	_T34 = GetTFMatrix(axis_deg[3], 4);
+	_T45 = GetTFMatrix(axis_deg[4], 5);
+	_T56 = GetTFMatrix(axis_deg[5], 6);
+	_T06 = _T01*_T12*_T23*_T34*_T45*_T56;
+	robot_pose[0] = _T06(0,3);
+	robot_pose[1] = _T06(1,3);
+	robot_pose[2] = _T06(2,3);
+	robot_pose[4] = RAD2DEG * atan2(-_T06(2, 0), sqrt(_T06(0, 0) * _T06(0, 0) + _T06(1, 0) * _T06(1, 0))); //pitch
+    robot_pose[3] = RAD2DEG * atan2(_T06(2, 1) / cos(robot_pose[4]), _T06(2, 2) / cos(robot_pose[4])); //roll
+    robot_pose[5] = RAD2DEG * atan2(_T06(1, 0) / cos(robot_pose[4]), _T06(0, 0) / cos(robot_pose[4])); //yaw
 }
 
 int main(int argc, char** argv)
@@ -138,6 +169,7 @@ int main(int argc, char** argv)
 	array<double, 6> robot_pose;
 	array<double, 6> axis_deg = {0, 90, 90, 0, 90, 0};
 	ros::init(argc, argv, "eigen_test");
+	/*
 	Matrix4d _T01, _T12, _T23, _T34, _T45, _T56 , _T06;
 	_T01 = GetTFMatrix(axis_deg[0], 1);
 	_T12 = GetTFMatrix(axis_deg[1], 2); 
@@ -158,7 +190,7 @@ int main(int argc, char** argv)
     	<<  ", roll = " << robot_pose[3]
     	<<  ", pitch = " << robot_pose[4]
     	<<  ", yaw = " << robot_pose[5] << endl;
-
+	*/
     #if 0
   array<double, JNT_NUM> g_torque = {0,0,0,0,0,0};
   vector<double> axis_deg1 = {0, 0, 0, 0, 0, 0};
