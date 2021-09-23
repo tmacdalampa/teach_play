@@ -178,36 +178,56 @@ bool Robot::RememberPtsCallback(teach_play::Decode::Request &req, teach_play::De
         	break;
         case GetPoints::ACS_ABSOLUTE:
              //here req.position is a vector of [axis1, axis2, axis3, axis4, axis5, axis6]
+			cout << "get ACS absolute position" << endl;
         	for(int i = 0; i<6; i++)
         	{
         		jog_goal.push_back(_zero_points[i] + (req.position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
         	}
+			cout << jog_goal[0] << ", "
+		 	<<	jog_goal[1] << ", "
+		 	<<	jog_goal[2] << ", "
+		 	<<	jog_goal[3] << ", "
+		 	<<	jog_goal[4] << ", "
+		 	<<	jog_goal[5] << endl;
         	break;
         case GetPoints::ACS_RELATIVE:
             //here req.position is a vector of [axis1, axis2, axis3, axis4, axis5, axis6]
+			cout << "get ACS Relative position" << endl;
         	for(int i = 0; i<6; i++)
         	{
         		jog_goal.push_back(_zero_points[i] + ((req.position[i] + _axis_deg[i]) / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
         	}
         	break;
         case GetPoints::MCS_ABSOLUTE:
-        	
-        	
         	//here req.position is a vector of [x, y, z,roll, pitch, yaw]
+			cout << "get MCS Absolute position" << endl;
+			cout << req.position[0] << ", "
+		 	<<	req.position[1] << ", "
+		 	<<	req.position[2] << ", "
+		 	<<	req.position[3] << ", "
+		 	<<	req.position[4] << ", "
+		 	<<	req.position[5] << endl;
+
         	IK(req.position, goal_position, _axis_deg);
         	
-        	for(int i = 0; i<6; i++)
+			for(int i = 0; i<6; i++)
         	{
         		jog_goal.push_back(_zero_points[i] + (goal_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
         	}
         	
         	break;
         case GetPoints::MCS_RELATIVE:
-        	
+        	cout << "get MCS Relative position" << endl;
         	for(int i =0; i<6; i++)
         	{
-        		goal_pose[i] = req.position[i] + _robot_pose[i];
+        		goal_pose.push_back(req.position[i] + _robot_pose[i]);
         	}
+			cout << goal_pose[0] << ", "
+		 	<<	goal_pose[1] << ", "
+		 	<<	goal_pose[2] << ", "
+		 	<<	goal_pose[3] << ", "
+		 	<<	goal_pose[4] << ", "
+		 	<<	goal_pose[5] << endl;
         	IK(goal_pose, goal_position, _axis_deg);
         	for(int i = 0; i<6; i++)
         	{

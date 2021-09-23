@@ -64,18 +64,21 @@ class RememberPoint(smach.State):
 							output_keys = ['rememberpoint_out'])
 		rospy.wait_for_service('/remember_pts_service')
 		self.triggerRememberPoint_service = rospy.ServiceProxy('/remember_pts_service', Decode)
-		self.req = DecodeRequest()
+		
 	
 	def execute(self, userdata):
+		req = DecodeRequest()
+		#req.position = []
+		ppp = []
 		pt = raw_input("please input 'p' when you want to remember this point and 'last' when you finish last point or 'jog' to move a little bit:")
 		if pt == 'p':
-			self.req = 0
+			req.type = 0
 			res = self.triggerRememberPoint_service(req)
 			print('remember point succeed')
 			return 'continue'
 		
 		elif pt == 'last':
-			self.req = 0
+			req.type = 0
 			res = self.triggerRememberPoint_service(req)
 			print('remember last point succeed')
 			return 'done'
@@ -84,23 +87,32 @@ class RememberPoint(smach.State):
 			userdata.rememberpoint_out = 'jog'
 			script_type = raw_input("please input 'AR', 'AA' , 'MR', 'MA'")
 			
-			while(script_type != 'MR' or script_type != 'MA' or script_type != 'AA' or script_type != 'AR'):
-				script_type = input("please input maximum velocity percentage again:")
+			while(script_type != 'MR' and script_type != 'MA' and script_type != 'AA' and script_type != 'AR'):
+				script_type = input("please input 'AR', 'AA' , 'MR', 'MA' again")
+			
+			if script_type == 'AA':
+				req.type = 1
+			elif script_type == 'AR':
+				req.type = 2
+			elif script_type == 'MA':
+				req.type = 3
+			else:
+				req.type = 4
 
-			displacement = raw_input("please input 6 arguments")
+			displacement = raw_input("please input 6 arguments:")
 			user_list = displacement.split()
 			
 			while(len(user_list) != 6):
-				displacement = raw_input("please input 6 arguments")
+				displacement = raw_input("please input 6 arguments:")
 				user_list = displacement.split()
 			
-			for i in range(len(user_list)):
-    			# convert each item to int type
-    			user_list[i] = float(user_list[i])
-    			req.position[i] = user_list[i]
-			
+			for i in range(len(user_list)):		
+				req.position.append(float(user_list[i]))
+
+
 			res = self.triggerRememberPoint_service(req)
 			userdata.rememberpoint_out = 'jog'
+			del req.position[:]
 			return 'jog'
 
 		else:
@@ -194,7 +206,7 @@ def main():
 		smach.StateMachine.add('StartMotion', StartMotion(),
 								transitions={'succeed':'SelectMode',
 											'failed':'ended',
-											'back', 'RememberPoint'},
+											'back':'RememberPoint'},
 								remapping={'startmotion_input':'start_motion_type'})
 
 
