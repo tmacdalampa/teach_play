@@ -543,7 +543,6 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 		
 	
 	double vel = _max_velocity*0.01*goal->vel;
-	double vel_tmp = _max_velocity*0.1;
 
 	switch(goal->type)
 	{ 
@@ -552,10 +551,10 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 			ElmoMaster->GroupLinearMotionMove(_play_points, vel);
         	break;
         case MotionType::GO_STRAIGHT:
-        	ElmoMaster->GroupLinearMotionMove(_straight_queue, vel_tmp);
+        	ElmoMaster->GroupLinearMotionMove(_straight_queue, vel);
         	break;
         case MotionType::JOG:
-        	ElmoMaster->GroupLinearMotionMove(_jog_goal_queue, vel_tmp);
+        	ElmoMaster->GroupLinearMotionMove(_jog_goal_queue, vel);
         	break;
 	}
 		
