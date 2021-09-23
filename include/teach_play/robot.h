@@ -8,6 +8,7 @@
 #include <geometry_msgs/Twist.h>
 #include <teach_play/MotionPlanning.h>
 #include <teach_play/LaserManager.h>
+#include <teach_play/Decode.h>
 #include <actionlib/server/simple_action_server.h>
 
 #include <teach_play/MoveLinearAbsAction.h>
@@ -57,7 +58,7 @@ public:
 	void JointStatesPublisher();
 	void RobotPosePublisher();
 	bool SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
-	bool RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+	bool RememberPtsCallback(teach_play::Decode::Request &req, teach_play::Decode::Response &res);
 	bool ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	
 	bool LaserManagerCallback(teach_play::LaserManager::Request &req, teach_play::LaserManager::Response &res);
@@ -115,7 +116,6 @@ private:
 	Matrix4d GetTFMatrix(double axis_deg, int id);
 	void GravityComp(array<double, JNT_NUM> &g_torque, vector<double> &axis_deg);
 	void AuxComp(array<double, JNT_NUM> &aux_torque, vector<int> &vel_dir);
-	void GetJogGoal();
 
 
 };

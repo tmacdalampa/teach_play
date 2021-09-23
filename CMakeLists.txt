@@ -62,6 +62,7 @@ set(CMAKE_C_FLAGS "-no-pie")
    FILES
    MotionPlanning.srv
    LaserManager.srv
+   Decode.srv
 #   Service2.srv
  )
 

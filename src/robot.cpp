@@ -61,6 +61,7 @@ Robot::Robot(ros::NodeHandle *nh):
 	_sensor_flag = false;
 
 	_play_points.clear();
+	_jog_goal_queue.clear();
 
     for(int i = 0; i<JNT_NUM; i++)
     {
@@ -148,18 +149,75 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 }
 
 
-bool Robot::RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool Robot::RememberPtsCallback(teach_play::Decode::Request &req, teach_play::Decode::Response &res)
 {
-	cout << _enc_cnts[0] << ", "
-		 <<	_enc_cnts[1] << ", "
-		 <<	_enc_cnts[2] << ", "
-		 <<	_enc_cnts[3] << ", "
-		 <<	_enc_cnts[4] << ", "
-		 <<	_enc_cnts[5] << endl;
+	_jog_goal_queue.clear();
+	
+	vector<double> jog_goal;
+	jog_goal.clear(); 
+	
+	vector<double> goal_position;
+    goal_position.clear();
 
-	_play_points.push_back(_enc_cnts);
-	res.message = "Get point";
-	res.success = true;
+    vector<double> goal_pose;
+    goal_pose.clear();
+
+	switch(req.type)
+	{ 
+    	case GetPoints::THIS_POINT:
+    		cout << _enc_cnts[0] << ", "
+		 	<<	_enc_cnts[1] << ", "
+		 	<<	_enc_cnts[2] << ", "
+		 	<<	_enc_cnts[3] << ", "
+		 	<<	_enc_cnts[4] << ", "
+		 	<<	_enc_cnts[5] << endl;
+
+			_play_points.push_back(_enc_cnts);
+			res.message = "Get Point in Play Points Queue";
+			res.success = true;
+        	break;
+        case GetPoints::ACS_ABSOLUTE:
+             //here req.position is a vector of [axis1, axis2, axis3, axis4, axis5, axis6]
+        	for(int i = 0; i<6; i++)
+        	{
+        		jog_goal.push_back(_zero_points[i] + (req.position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+        	}
+        	break;
+        case GetPoints::ACS_RELATIVE:
+            //here req.position is a vector of [axis1, axis2, axis3, axis4, axis5, axis6]
+        	for(int i = 0; i<6; i++)
+        	{
+        		jog_goal.push_back(_zero_points[i] + ((req.position[i] + _axis_deg[i]) / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+        	}
+        	break;
+        case GetPoints::MCS_ABSOLUTE:
+        	
+        	
+        	//here req.position is a vector of [x, y, z,roll, pitch, yaw]
+        	IK(req.position, goal_position, _axis_deg);
+        	
+        	for(int i = 0; i<6; i++)
+        	{
+        		jog_goal.push_back(_zero_points[i] + (goal_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+        	}
+        	
+        	break;
+        case GetPoints::MCS_RELATIVE:
+        	
+        	for(int i =0; i<6; i++)
+        	{
+        		goal_pose[i] = req.position[i] + _robot_pose[i];
+        	}
+        	IK(goal_pose, goal_position, _axis_deg);
+        	for(int i = 0; i<6; i++)
+        	{
+        		jog_goal.push_back(_zero_points[i] + (goal_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+        	}
+			
+        	break;
+	}
+	_jog_goal_queue.push_back(jog_goal);
+	
     return true;
 }
 
@@ -486,22 +544,17 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 	
 	double vel = _max_velocity*0.01*goal->vel;
 	double vel_tmp = _max_velocity*0.1;
-	MotionType type;
 
 	switch(goal->type)
 	{ 
-    	case 0:
-    		type = GO_POINTS;
+    	case MotionType::GO_POINTS:
     		_sensor_flag = true;
 			ElmoMaster->GroupLinearMotionMove(_play_points, vel);
         	break;
-        case 1:
-        	type = GO_STRAIGHT;
+        case MotionType::GO_STRAIGHT:
         	ElmoMaster->GroupLinearMotionMove(_straight_queue, vel_tmp);
         	break;
-        case 2:
-        	type = JOG;
-        	GetJogGoal();
+        case MotionType::JOG:
         	ElmoMaster->GroupLinearMotionMove(_jog_goal_queue, vel_tmp);
         	break;
 	}
@@ -529,7 +582,3 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 	
 }
 
-void Robot::GetJogGoal()
-{
-	
-}

@@ -31,3 +31,12 @@ enum GroupState
 	MOTION = 1,
 	STOP = 0
 };
+
+enum GetPoints
+{
+	THIS_POINT = 0,
+	ACS_ABSOLUTE = 1,
+	ACS_RELATIVE = 2,
+	MCS_ABSOLUTE = 3,
+	MCS_RELATIVE = 4
+};

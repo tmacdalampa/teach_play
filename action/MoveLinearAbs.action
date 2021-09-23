@@ -1,5 +1,5 @@
 #goal definition
-bool type
+int16 type
 float32 vel
 ---
 #result
