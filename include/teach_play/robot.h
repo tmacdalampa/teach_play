@@ -51,6 +51,7 @@ public:
 	ros::ServiceServer go_straight_service;
 	ros::ServiceServer clear_pts_service;
 	ros::ServiceServer laser_manager_service;
+	ros::ServiceServer jog_goal_service;
 	actionlib::SimpleActionServer<teach_play::MoveLinearAbsAction> as;
 
 	Robot(ros::NodeHandle *nh);
@@ -58,9 +59,10 @@ public:
 	void JointStatesPublisher();
 	void RobotPosePublisher();
 	bool SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
-	bool RememberPtsCallback(teach_play::Decode::Request &req, teach_play::Decode::Response &res);
+	bool RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 	bool ClearPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-	
+	bool JogGoalCallback(teach_play::Decode::Request &req, teach_play::Decode::Response &res);
+
 	bool LaserManagerCallback(teach_play::LaserManager::Request &req, teach_play::LaserManager::Response &res);
 	bool PlayPtsCallback(teach_play::MotionPlanning::Request &req, teach_play::MotionPlanning::Response &res);
 	void UpdateTorque();

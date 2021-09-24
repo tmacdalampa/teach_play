@@ -34,9 +34,8 @@ enum GroupState
 
 enum GetPoints
 {
-	THIS_POINT = 0,
-	ACS_ABSOLUTE = 1,
-	ACS_RELATIVE = 2,
-	MCS_ABSOLUTE = 3,
-	MCS_RELATIVE = 4
+	ACS_ABSOLUTE = 0,
+	ACS_RELATIVE = 1,
+	MCS_ABSOLUTE = 2,
+	MCS_RELATIVE = 3
 };

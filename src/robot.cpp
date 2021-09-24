@@ -46,6 +46,7 @@ Robot::Robot(ros::NodeHandle *nh):
     remember_pts_service = nh->advertiseService("/remember_pts_service", &Robot::RememberPtsCallback, this);
     clear_pts_service = nh->advertiseService("/clear_pts_service", &Robot::ClearPtsCallback, this);
 	laser_manager_service = nh->advertiseService("/laser_manager_service", &Robot::LaserManagerCallback, this);
+	jog_goal_service = nh->advertiseService("/jog_goal_service", &Robot::JogGoalCallback, this);
 
 	_straight_position = {0, 90, 90, 0, 90, 0};
 	for(int i =0; i<JNT_NUM;i++)
@@ -149,96 +150,19 @@ bool Robot::SelectModeCallback(std_srvs::SetBool::Request &req, std_srvs::SetBoo
 }
 
 
-bool Robot::RememberPtsCallback(teach_play::Decode::Request &req, teach_play::Decode::Response &res)
+bool Robot::RememberPtsCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
-	_jog_goal_queue.clear();
-	
-	vector<double> jog_goal;
-	jog_goal.clear(); 
-	
-	vector<double> goal_position;
-    goal_position.clear();
-
-    vector<double> goal_pose;
-    goal_pose.clear();
-
-	switch(req.type)
-	{ 
-    	case GetPoints::THIS_POINT:
-    		cout << _enc_cnts[0] << ", "
-		 	<<	_enc_cnts[1] << ", "
-		 	<<	_enc_cnts[2] << ", "
-		 	<<	_enc_cnts[3] << ", "
-		 	<<	_enc_cnts[4] << ", "
-		 	<<	_enc_cnts[5] << endl;
-
-			_play_points.push_back(_enc_cnts);
-			res.message = "Get Point in Play Points Queue";
-			res.success = true;
-        	break;
-        case GetPoints::ACS_ABSOLUTE:
-             //here req.position is a vector of [axis1, axis2, axis3, axis4, axis5, axis6]
-			cout << "get ACS absolute position" << endl;
-        	for(int i = 0; i<6; i++)
-        	{
-        		jog_goal.push_back(_zero_points[i] + (req.position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
-        	}
-			cout << jog_goal[0] << ", "
-		 	<<	jog_goal[1] << ", "
-		 	<<	jog_goal[2] << ", "
-		 	<<	jog_goal[3] << ", "
-		 	<<	jog_goal[4] << ", "
-		 	<<	jog_goal[5] << endl;
-        	break;
-        case GetPoints::ACS_RELATIVE:
-            //here req.position is a vector of [axis1, axis2, axis3, axis4, axis5, axis6]
-			cout << "get ACS Relative position" << endl;
-        	for(int i = 0; i<6; i++)
-        	{
-        		jog_goal.push_back(_zero_points[i] + ((req.position[i] + _axis_deg[i]) / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
-        	}
-        	break;
-        case GetPoints::MCS_ABSOLUTE:
-        	//here req.position is a vector of [x, y, z,roll, pitch, yaw]
-			cout << "get MCS Absolute position" << endl;
-			cout << req.position[0] << ", "
-		 	<<	req.position[1] << ", "
-		 	<<	req.position[2] << ", "
-		 	<<	req.position[3] << ", "
-		 	<<	req.position[4] << ", "
-		 	<<	req.position[5] << endl;
-
-        	IK(req.position, goal_position, _axis_deg);
-        	
-			for(int i = 0; i<6; i++)
-        	{
-        		jog_goal.push_back(_zero_points[i] + (goal_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
-        	}
-        	
-        	break;
-        case GetPoints::MCS_RELATIVE:
-        	cout << "get MCS Relative position" << endl;
-        	for(int i =0; i<6; i++)
-        	{
-        		goal_pose.push_back(req.position[i] + _robot_pose[i]);
-        	}
-			cout << goal_pose[0] << ", "
-		 	<<	goal_pose[1] << ", "
-		 	<<	goal_pose[2] << ", "
-		 	<<	goal_pose[3] << ", "
-		 	<<	goal_pose[4] << ", "
-		 	<<	goal_pose[5] << endl;
-        	IK(goal_pose, goal_position, _axis_deg);
-        	for(int i = 0; i<6; i++)
-        	{
-        		jog_goal.push_back(_zero_points[i] + (goal_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
-        	}
-			
-        	break;
-	}
-	_jog_goal_queue.push_back(jog_goal);
-	
-    return true;
+    cout << _enc_cnts[0] << ", "
+	<<	_enc_cnts[1] << ", "
+	<<	_enc_cnts[2] << ", "
+	<<	_enc_cnts[3] << ", "
+	<<	_enc_cnts[4] << ", "
+	<<	_enc_cnts[5] << endl;
+	_play_points.push_back(_enc_cnts);
+	res.message = "Get Point in Play Points Queue";
+	res.success = true;
+    
+	return true;
 }
 
 
@@ -607,3 +531,83 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 	
 }
 
+bool Robot::JogGoalCallback(teach_play::Decode::Request &req, teach_play::Decode::Response &res)
+{
+	_jog_goal_queue.clear();
+	
+	vector<double> jog_goal;
+	jog_goal.clear(); 
+	
+	vector<double> goal_position;
+    goal_position.clear();
+
+    vector<double> goal_pose;
+    goal_pose.clear();
+
+	switch(req.type)
+	{ 
+        case GetPoints::ACS_ABSOLUTE:
+             //here req.position is a vector of [axis1, axis2, axis3, axis4, axis5, axis6]
+			cout << "get ACS absolute position" << endl;
+        	for(int i = 0; i<6; i++)
+        	{
+        		jog_goal.push_back(_zero_points[i] + (req.position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+        	}
+			cout << jog_goal[0] << ", "
+		 	<<	jog_goal[1] << ", "
+		 	<<	jog_goal[2] << ", "
+		 	<<	jog_goal[3] << ", "
+		 	<<	jog_goal[4] << ", "
+		 	<<	jog_goal[5] << endl;
+        	break;
+        case GetPoints::ACS_RELATIVE:
+            //here req.position is a vector of [axis1, axis2, axis3, axis4, axis5, axis6]
+			cout << "get ACS Relative position" << endl;
+        	for(int i = 0; i<6; i++)
+        	{
+        		jog_goal.push_back(_zero_points[i] + ((req.position[i] + _axis_deg[i]) / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+        	}
+        	break;
+        case GetPoints::MCS_ABSOLUTE:
+        	//here req.position is a vector of [x, y, z,roll, pitch, yaw]
+			cout << "get MCS Absolute position" << endl;
+			cout << req.position[0] << ", "
+		 	<<	req.position[1] << ", "
+		 	<<	req.position[2] << ", "
+		 	<<	req.position[3] << ", "
+		 	<<	req.position[4] << ", "
+		 	<<	req.position[5] << endl;
+
+        	IK(req.position, goal_position, _axis_deg);
+        	
+			for(int i = 0; i<6; i++)
+        	{
+        		jog_goal.push_back(_zero_points[i] + (goal_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+        	}
+        	
+        	break;
+        case GetPoints::MCS_RELATIVE:
+        	cout << "get MCS Relative position" << endl;
+        	for(int i =0; i<6; i++)
+        	{
+        		goal_pose.push_back(req.position[i] + _robot_pose[i]);
+        	}
+			cout << goal_pose[0] << ", "
+		 	<<	goal_pose[1] << ", "
+		 	<<	goal_pose[2] << ", "
+		 	<<	goal_pose[3] << ", "
+		 	<<	goal_pose[4] << ", "
+		 	<<	goal_pose[5] << endl;
+        	IK(goal_pose, goal_position, _axis_deg);
+        	for(int i = 0; i<6; i++)
+        	{
+        		jog_goal.push_back(_zero_points[i] + (goal_position[i] / DEG_PER_REV) * _enc_resolution * _gear_ratios[i]);
+        	}
+			
+        	break;
+	}
+	_jog_goal_queue.push_back(jog_goal);
+	res.success = true;
+	res.message = "get jog goal";
+    return true;
+}
