@@ -568,7 +568,13 @@ void Robot::Execute(const teach_play::MoveLinearAbsGoalConstPtr& goal)
 	{ 
     	case MotionType::GO_POINTS:
     		_sensor_flag = true;
-			ElmoMaster->GroupLinearMotionMove(_play_points, vel);
+    		if (_play_points.empty() != true) ElmoMaster->GroupLinearMotionMove(_play_points, vel);
+    		else
+    		{
+    			_result.success = false;
+				_result.message = "play points empty";
+				as.setSucceeded(_result);
+    		}
         	break;
         case MotionType::GO_STRAIGHT:
         	ElmoMaster->GroupLinearMotionMove(_straight_queue, vel);

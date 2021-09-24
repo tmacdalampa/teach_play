@@ -15,7 +15,7 @@ class SelectMode(smach.State):
 	def __init__(self):
 		smach.State.__init__(self, 
 							outcomes=['teach','play', 'failed', 'error', 'exit', 'clear'],
-							output_keys = ['selectmode_out'])
+							input_keys = ['selectmode_input'])
 		rospy.wait_for_service('/select_mode_service')
 		rospy.wait_for_service('/clear_pts_service')
 
@@ -24,10 +24,38 @@ class SelectMode(smach.State):
 
 	
 	def execute(self, userdata):
-		
-		mode = raw_input("please input 'teach' or 'play' or 'exit' or 'clear':")
-		req = SetBoolRequest()
-		if mode == 'teach':
+		if userdata.selectmode_input != 'jog'
+			mode = raw_input("please input 'teach' or 'play' or 'exit' or 'clear':")
+			req = SetBoolRequest()
+			if mode == 'teach':
+				req.data = True
+				res = self.triggerSelectMode_service(req)
+				if res.success == True:
+					return 'teach'
+				else:
+					return 'faliled'
+
+			elif mode == 'play':
+				req.data = False
+				res = self.triggerSelectMode_service(req)
+				userdata.selectmode_out = 'play'
+				if res.success == True:
+					return 'play'
+				else:
+					return 'faliled'
+			elif mode == 'exit':
+				rospy.signal_shutdown("shutdown for no reason.")
+				return 'exit'
+
+			elif mode == 'clear':
+				res = self.triggerClearPts_service(TriggerRequest())
+				if res.success == True:
+					return 'clear'
+				else:
+					return 'faliled'
+			else:
+				return 'error'
+		else:
 			req.data = True
 			res = self.triggerSelectMode_service(req)
 			if res.success == True:
@@ -35,26 +63,6 @@ class SelectMode(smach.State):
 			else:
 				return 'faliled'
 
-		elif mode == 'play':
-			req.data = False
-			res = self.triggerSelectMode_service(req)
-			userdata.selectmode_out = 'play'
-			if res.success == True:
-				return 'play'
-			else:
-				return 'faliled'
-		elif mode == 'exit':
-			rospy.signal_shutdown("shutdown for no reason.")
-			return 'exit'
-
-		elif mode == 'clear':
-			res = self.triggerClearPts_service(TriggerRequest())
-			if res.success == True:
-				return 'clear'
-			else:
-				return 'faliled'
-		else:
-			return 'error'
 	
 class RememberPoint(smach.State):
 	
@@ -68,8 +76,7 @@ class RememberPoint(smach.State):
 	
 	def execute(self, userdata):
 		req = DecodeRequest()
-		#req.position = []
-		ppp = []
+
 		pt = raw_input("please input 'p' when you want to remember this point and 'last' when you finish last point or 'jog' to move a little bit:")
 		if pt == 'p':
 			req.type = 0
@@ -81,14 +88,15 @@ class RememberPoint(smach.State):
 			req.type = 0
 			res = self.triggerRememberPoint_service(req)
 			print('remember last point succeed')
+			userdata.rememberpoint_out = 'play'
 			return 'done'
 		
 		elif pt == 'jog':
 			userdata.rememberpoint_out = 'jog'
-			script_type = raw_input("please input 'AR', 'AA' , 'MR', 'MA'")
+			script_type = raw_input("please input 'AR', 'AA' , 'MR', 'MA':")
 			
 			while(script_type != 'MR' and script_type != 'MA' and script_type != 'AA' and script_type != 'AR'):
-				script_type = input("please input 'AR', 'AA' , 'MR', 'MA' again")
+				script_type = input("please input 'AR', 'AA' , 'MR', 'MA' again:")
 			
 			if script_type == 'AA':
 				req.type = 1
@@ -111,7 +119,6 @@ class RememberPoint(smach.State):
 
 
 			res = self.triggerRememberPoint_service(req)
-			userdata.rememberpoint_out = 'jog'
 			del req.position[:]
 			return 'jog'
 
@@ -123,8 +130,9 @@ class StartMotion(smach.State):
 	
 	def __init__(self):
 		smach.State.__init__(self, 
-							outcomes=['succeed','failed', 'back'],
-							input_keys = ['startmotion_input'])
+							outcomes=['succeed','failed'],
+							input_keys = ['startmotion_input'],
+							output_keys = ['startmotion_out'])
 
 
 		self.client = actionlib.SimpleActionClient('/move_linear_abs', MoveLinearAbsAction)
@@ -155,11 +163,7 @@ class StartMotion(smach.State):
 			self.client.send_goal(goal)
 			self.client.wait_for_result()
 			res = self.client.get_result()
-
-			if res.success == True:
-				return 'succeed'
-			else:
-				return 'failed'
+			userdata.startmotion_out = userdata.startmotion_input
 			
 		else:
 			goal.vel = 5
@@ -167,11 +171,12 @@ class StartMotion(smach.State):
 			self.client.send_goal(goal)
 			self.client.wait_for_result()
 			res = self.client.get_result()
+			userdata.startmotion_out = userdata.startmotion_input
 
-			if res.success == True:
-				return 'back'
-			else:
-				return 'failed'
+		if res.success == True:
+			return 'succeed'
+		else:
+			return 'failed'
 
 		
 
@@ -194,7 +199,7 @@ def main():
 											'error':'SelectMode',
 											'exit':'ended', 
 											'clear':'SelectMode'},
-								remapping={'selectmode_out':'start_motion_type'})
+								remapping={'selectmode_input':'end_motion_type'})
 
 		smach.StateMachine.add('RememberPoint', RememberPoint(),
 								transitions={'continue':'RememberPoint',
@@ -205,9 +210,9 @@ def main():
 		
 		smach.StateMachine.add('StartMotion', StartMotion(),
 								transitions={'succeed':'SelectMode',
-											'failed':'ended',
-											'back':'RememberPoint'},
-								remapping={'startmotion_input':'start_motion_type'})
+											'failed':'ended'},
+								remapping={'startmotion_input':'start_motion_type',
+											'startmotion_out':'end_motion_type'})
 
 
 		
